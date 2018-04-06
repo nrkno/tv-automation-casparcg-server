@@ -198,6 +198,8 @@ struct server::impl : boost::noncopyable
 
         start_initial_media_info_scan();
         CASPAR_LOG(info) << L"Started initial media information retrieval.";
+
+        core::diagnostics::osd::show_graphs(true);
     }
 
     ~impl()

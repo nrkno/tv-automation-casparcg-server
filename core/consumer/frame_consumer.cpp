@@ -137,7 +137,8 @@ class destroy_consumer_proxy : public frame_consumer
     std::wstring                 print() const override { return consumer_->print(); }
     std::wstring                 name() const override { return consumer_->name(); }
     boost::property_tree::wptree info() const override { return consumer_->info(); }
-    bool    has_synchronization_clock() const override { return consumer_->has_synchronization_clock(); }
+	bool    has_synchronization_clock() const override { return consumer_->has_synchronization_clock(); }
+        int    dropped_last_frame() const override { return consumer_->dropped_last_frame(); }
     int     buffer_depth() const override { return consumer_->buffer_depth(); }
     int     index() const override { return consumer_->index(); }
     int64_t presentation_frame_age_millis() const override { return consumer_->presentation_frame_age_millis(); }
@@ -178,6 +179,7 @@ class print_consumer_proxy : public frame_consumer
     std::wstring                 name() const override { return consumer_->name(); }
     boost::property_tree::wptree info() const override { return consumer_->info(); }
     bool    has_synchronization_clock() const override { return consumer_->has_synchronization_clock(); }
+    int    dropped_last_frame() const override { return consumer_->dropped_last_frame(); }
     int     buffer_depth() const override { return consumer_->buffer_depth(); }
     int     index() const override { return consumer_->index(); }
     int64_t presentation_frame_age_millis() const override { return consumer_->presentation_frame_age_millis(); }
@@ -230,6 +232,7 @@ class recover_consumer_proxy : public frame_consumer
     std::wstring                 name() const override { return consumer_->name(); }
     boost::property_tree::wptree info() const override { return consumer_->info(); }
     bool    has_synchronization_clock() const override { return consumer_->has_synchronization_clock(); }
+    int    dropped_last_frame() const override { return consumer_->dropped_last_frame(); }
     int     buffer_depth() const override { return consumer_->buffer_depth(); }
     int     index() const override { return consumer_->index(); }
     int64_t presentation_frame_age_millis() const override { return consumer_->presentation_frame_age_millis(); }
@@ -287,6 +290,7 @@ class cadence_guard : public frame_consumer
     std::wstring                 name() const override { return consumer_->name(); }
     boost::property_tree::wptree info() const override { return consumer_->info(); }
     bool    has_synchronization_clock() const override { return consumer_->has_synchronization_clock(); }
+    int    dropped_last_frame() const override { return consumer_->dropped_last_frame(); }
     int     buffer_depth() const override { return consumer_->buffer_depth(); }
     int     index() const override { return consumer_->index(); }
     int64_t presentation_frame_age_millis() const override { return consumer_->presentation_frame_age_millis(); }

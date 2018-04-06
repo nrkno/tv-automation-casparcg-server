@@ -56,6 +56,16 @@ public:
 		return consumer_->has_synchronization_clock();
 	}
 
+        std::future<bool> ready_to_send() const
+        {
+            return consumer_->ready_to_send();
+        }
+
+        int dropped_last_frame() const
+	{
+		return consumer_->dropped_last_frame();
+	}
+
 	boost::property_tree::wptree info() const
 	{
 		return consumer_->info();
@@ -85,7 +95,9 @@ void              port::change_channel_format(const core::video_format_desc&    
 }
 int                          port::buffer_depth() const { return impl_->buffer_depth(); }
 std::wstring port::print() const{ return impl_->print();}
-bool port::has_synchronization_clock() const{return impl_->has_synchronization_clock();}
+bool port::has_synchronization_clock() const { return impl_->has_synchronization_clock(); }
+std::future<bool> port::ready_to_send() const { return impl_->ready_to_send(); }
+int port::dropped_last_frame() const { return impl_->dropped_last_frame(); }
 boost::property_tree::wptree port::info() const{return impl_->info();}
 int64_t port::presentation_frame_age_millis() const{ return impl_->presentation_frame_age_millis(); }
 spl::shared_ptr<const frame_consumer> port::consumer() const { return impl_->consumer(); }

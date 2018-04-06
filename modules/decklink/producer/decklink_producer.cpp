@@ -150,7 +150,7 @@ class decklink_producer
         , frame_factory_(frame_factory)
         , channel_layout_(get_adjusted_channel_layout(channel_layout))
     {
-        frame_buffer_.set_capacity(2);
+        frame_buffer_.set_capacity(8);
 
         graph_->set_color("tick-time", diagnostics::color(0.0f, 0.6f, 0.9f));
         graph_->set_color("late-frame", diagnostics::color(0.6f, 0.3f, 0.3f));

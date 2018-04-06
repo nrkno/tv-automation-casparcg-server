@@ -116,6 +116,7 @@ class stage : public stage_base
     // Methods
 
     std::map<int, draw_frame> operator()(const video_format_desc& format_desc);
+	void drop_frame(const video_format_desc& format_desc);
 
     std::future<void>            apply_transforms(const std::vector<transform_tuple_t>& transforms) override;
     std::future<void>            apply_transform(int                     index,

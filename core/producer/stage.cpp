@@ -124,6 +124,20 @@ struct stage::impl : public std::enable_shared_from_this<impl>
         return frames;
     }
 
+	void drop_frame(const video_format_desc& format_desc)
+	{
+		std::unique_lock<std::mutex> lock(lock_);
+
+		std::vector<int> indices;
+
+		for (auto& layer : layers_) {
+			indices.push_back(layer.first);
+		}
+
+		tbb::parallel_for_each(
+			indices.begin(), indices.end(), [&](int index) { layers_[index].receive(format_desc); });
+	}
+
     void draw(int index, const video_format_desc& format_desc, std::map<int, draw_frame>& frames)
     {
         auto& layer     = layers_[index];
@@ -485,6 +499,7 @@ std::future<boost::property_tree::wptree>    stage::info(int index) { return imp
 std::future<boost::property_tree::wptree>    stage::delay_info() { return impl_->delay_info(); }
 std::future<boost::property_tree::wptree>    stage::delay_info(int index) { return impl_->delay_info(index); }
 std::map<int, draw_frame> stage::operator()(const video_format_desc& format_desc) { return (*impl_)(format_desc); }
+void stage::drop_frame(const video_format_desc& format_desc) { return impl_->drop_frame(format_desc); }
 monitor::subject&                stage::monitor_output() { return *impl_->monitor_subject_; }
 void stage::on_interaction(const interaction_event::ptr& event) { impl_->on_interaction(event); }
 std::unique_lock<std::mutex> stage::get_lock() const { return impl_->get_lock(); }

@@ -74,7 +74,7 @@ struct video_channel::impl final
     }(index_);
 
     caspar::core::output         output_;
-    std::future<void>            output_ready_for_frame_ = make_ready_future();
+    std::future<int>            output_ready_for_frame_ = make_ready_future<int>(0);
     spl::shared_ptr<image_mixer> image_mixer_;
     caspar::core::mixer          mixer_;
     std::shared_ptr<core::stage> stage_;
@@ -191,7 +191,7 @@ struct video_channel::impl final
 
             // Produce
 
-            auto stage_frames = (*stage_)(format_desc);
+            auto stage_frames = (*stage_)(format_desc);// TODO - add flush buffers flag if frame was dropped??
 
             // Ensure it is accurate now the producer has run
             auto timecode = timecode_->tick(true);
@@ -206,7 +206,11 @@ struct video_channel::impl final
             // Consume
 
             output_ready_for_frame_ = output_(timecode, std::move(mixed_frame), format_desc, channel_layout);
-            output_ready_for_frame_.get();
+            auto count = output_ready_for_frame_.get();
+            for(int i=0;i<count;i++)
+            {
+                stage_->drop_frame(format_desc);
+            }
 
             auto frame_time = frame_timer.elapsed() * format_desc.fps * 0.5;
             graph_->set_value("tick-time", frame_time);

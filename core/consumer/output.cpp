@@ -60,6 +60,7 @@ struct output::impl
 	audio_channel_layout				channel_layout_;
 	std::map<int, port>					ports_;
 	prec_timer							sync_timer_;
+        caspar::timer							sync_timer2_;
 	std::map<int, int64_t>				send_to_consumers_delays_;
 	executor							executor_					{ L"output " + boost::lexical_cast<std::wstring>(channel_index_) };
 public:
@@ -147,8 +148,21 @@ public:
 			.where(std::mem_fn(&port::has_synchronization_clock))
 			.any();
 	}
+	
+	int did_drop_frame() const {
+		for (auto& p : ports_)
+		{
+			if (p.second.has_synchronization_clock()) {
+                            auto dropped = p.second.dropped_last_frame();
+                            if (dropped > -1)
+                                return dropped;
+			}
+		}
 
-	std::future<void> operator()(frame_timecode                    timecode,
+                return 0;
+        }
+
+	std::future<int> operator()(frame_timecode                    timecode,
                                      const_frame                       input_frame,
                                      const core::video_format_desc&    format_desc,
                                      const core::audio_channel_layout& channel_layout)
@@ -201,9 +215,9 @@ public:
 		});
 
 		if (!pending_send_results)
-			return make_ready_future();
+			return make_ready_future<int>(0);
 
-		return executor_.begin_invoke([=]()
+		return executor_.begin_invoke([=]() -> int
 		{
 			// Retrieve results
 			for (auto it = pending_send_results->begin(); it != pending_send_results->end(); ++it)
@@ -224,6 +238,17 @@ public:
 				}
 			}
 
+                        auto el = sync_timer2_.elapsed();
+                        sync_timer2_.restart();
+
+                        auto frames = static_cast<int>(round(el / (1.0 / format_desc_.fps)));
+                        frames = did_drop_frame();
+
+                    if (frames > 1)
+                    {
+                        CASPAR_LOG(info) << "Elapse: " << frames;
+                    }
+
 			if (!has_synchronization_clock())
 				sync_timer_.tick(1.0 / format_desc_.fps);
 
@@ -232,8 +257,22 @@ public:
 			*monitor_subject_
 				<< monitor::message("/consume_time") % consume_time
 				<< monitor::message("/profiler/time") % consume_time % (1.0 / format_desc.fps);
+
+			return frames;
 		});
 	}
+
+        std::future<bool> ready_to_send()
+        {
+            for (auto& port : ports_) {
+                if (!port.second.has_synchronization_clock())
+                    continue;
+
+                return port.second.ready_to_send();
+            }
+
+            return make_ready_future(true);
+        }
 
 	std::wstring print() const
 	{
@@ -307,7 +346,7 @@ void output::remove(const spl::shared_ptr<frame_consumer>& consumer){impl_->remo
 std::future<boost::property_tree::wptree> output::info() const{return impl_->info();}
 std::future<boost::property_tree::wptree> output::delay_info() const{ return impl_->delay_info(); }
 std::vector<spl::shared_ptr<const frame_consumer>> output::get_consumers() const { return impl_->get_consumers(); }
-std::future<void> output::operator()(frame_timecode                    timecode,
+std::future<int> output::operator()(frame_timecode                    timecode,
                                      const_frame                       frame,
                                      const video_format_desc&          format_desc,
                                      const core::audio_channel_layout& channel_layout)
@@ -315,4 +354,5 @@ std::future<void> output::operator()(frame_timecode                    timecode,
     return (*impl_)(timecode, std::move(frame), format_desc, channel_layout);
 }
 monitor::subject& output::monitor_output() {return *impl_->monitor_subject_;}
+std::future<bool> output::ready_to_send() const { return impl_->ready_to_send(); }
 }}

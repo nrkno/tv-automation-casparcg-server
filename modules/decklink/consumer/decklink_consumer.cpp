@@ -59,6 +59,7 @@
 #include <common/assert.h>
 
 #include <future>
+#include "common/prec_timer.h"
 
 namespace caspar { namespace decklink {
 
@@ -427,6 +428,7 @@ struct decklink_consumer
 
     tbb::concurrent_bounded_queue<std::pair<core::frame_timecode, core::const_frame>> frame_buffer_;
     caspar::semaphore                                                                 ready_for_new_frames_{0};
+    int									      dropped_last_frame_ = 0;
 
     spl::shared_ptr<diagnostics::graph>               graph_;
     caspar::timer                                     tick_timer_;
@@ -521,6 +523,8 @@ struct decklink_consumer
         CASPAR_LOG(info) << print() << L" Enabled embedded-audio.";
     }
 
+    long long ref_start_time_;
+
     void enable_video(BMDDisplayMode display_mode)
     {
         if (FAILED(output_->EnableVideoOutput(
@@ -531,6 +535,12 @@ struct decklink_consumer
             CASPAR_THROW_EXCEPTION(caspar_exception()
                                    << msg_info(print() + L" Failed to set fill playback completion callback.")
                                    << boost::errinfo_api_function("SetScheduledFrameCompletionCallback"));
+
+        long long tmp;
+        if (FAILED(output_->GetHardwareReferenceClock(format_desc_.time_scale, &ref_start_time_, &tmp, &tmp)))
+            CASPAR_THROW_EXCEPTION(caspar_exception()
+                << msg_info(print() + L" Failed to set fill playback completion callback.")
+                << boost::errinfo_api_function("SetScheduledFrameCompletionCallback"));
 
         if (key_context_)
             key_context_->enable_video(display_mode, [this]() { return print(); });
@@ -556,6 +566,8 @@ struct decklink_consumer
         return S_OK;
     }
 
+    int frame_count = 0;
+
     virtual HRESULT STDMETHODCALLTYPE ScheduledFrameCompleted(IDeckLinkVideoFrame*           completed_frame,
                                                               BMDOutputFrameCompletionResult result)
     {
@@ -579,30 +591,86 @@ struct decklink_consumer
                     static_cast<double>(scheduled_frames_completed_ - key_context_->scheduled_frames_completed_) * 0.1 +
                         0.5);
 
+            UINT32 buffered;
+            if (!FAILED(output_->GetBufferedVideoFrameCount(&buffered))) {
+                graph_->set_value("buffered-video", static_cast<double>(buffered) / (config_.buffer_depth()));
+            }
+
+            double speed;
+            long long time_now;
+            if (FAILED(output_->GetScheduledStreamTime(format_desc_.time_scale, &time_now, &speed)))
+                time_now = 0;
+            
+
             if (result == bmdOutputFrameDisplayedLate) {
                 graph_->set_tag(diagnostics::tag_severity::WARNING, "late-frame");
-                video_scheduled_ += format_desc_.duration;
-                audio_scheduled_ += dframe->audio_data().size() / in_channel_layout_.num_channels;
+                
+                // TODO - will this screw up rendering speed?
+                auto before = video_scheduled_;
+                if (time_now != 0)
+                {
+
+                    video_scheduled_ = (((time_now + format_desc_.duration/2 + format_desc_.duration / 2) / format_desc_.duration)+1+ buffered) * format_desc_.duration; // Includes a skip the next half frame, to ensure we have a chance to queue it
+                }
+                else
+                    video_scheduled_ += format_desc_.duration;
+
+                auto diff = (video_scheduled_ - before) / format_desc_.duration; // TODO - what if consumer isnt the sync provider
+                if (diff > 0)
+                dropped_last_frame_ += static_cast<int>(diff);
+
+                //auto frames_scheduled = viideo_scheduled_ / format_desc_.duration;
+                // TODO - account for cadence. not worth doing until ported to 2.2
+
+                audio_scheduled_ = dframe->audio_data().size() / in_channel_layout_.num_channels * video_scheduled_ / format_desc_.duration;
+
+                // TODO - audio
+
+                // Always reuse the last frame, its already being output so will just hold a little longer and allows us to refill the buffer a little quicker
+                //schedule_next_video(last_frame_.second, last_frame_.first);
+
+                //return S_OK;
             } else if (result == bmdOutputFrameDropped)
                 graph_->set_tag(diagnostics::tag_severity::WARNING, "dropped-frame");
             else if (result == bmdOutputFrameFlushed)
                 graph_->set_tag(diagnostics::tag_severity::WARNING, "flushed-frame");
 
-            UINT32 buffered;
-            output_->GetBufferedVideoFrameCount(&buffered);
-            graph_->set_value("buffered-video", static_cast<double>(buffered) / (config_.buffer_depth()));
 
             if (config_.embedded_audio) {
-                output_->GetBufferedAudioSampleFrameCount(&buffered);
+                UINT32 buffered2;
+                output_->GetBufferedAudioSampleFrameCount(&buffered2);
                 graph_->set_value("buffered-audio",
-                                  static_cast<double>(buffered) /
+                                  static_cast<double>(buffered2) /
                                       (format_desc_.audio_cadence[0] * config_.buffer_depth()));
             }
 
             auto frame = std::make_pair(core::frame_timecode::empty(), core::const_frame::empty());
 
-            frame_buffer_.pop(frame);
-            ready_for_new_frames_.release();
+	    if (++frame_count > 500 && frame_count % (25*10) == 0) {
+		    //std::this_thread::sleep_for(std::chrono::milliseconds(80));
+	    }
+
+            //dropped_last_frame_ = dropped_last_frame_ || result == bmdOutputFrameDisplayedLate; // TODO detect that buffer is refilling? TODO should this not be above the pop?
+
+            /*
+            while(frame_buffer_.size() == 0 && static_cast<int>(buffered) > format_desc_.audio_cadence[0])
+            {
+                boost::this_thread::sleep_for(boost::chrono::milliseconds(1));
+                output_->GetBufferedAudioSampleFrameCount(&buffered);
+            }
+            if (frame_buffer_.size() == 0)
+            {
+                frame = last_frame_;
+            }
+            else */
+            {
+                frame_buffer_.pop(frame);
+                if (time_now +(config_.buffer_depth()-1) * format_desc_.duration == video_scheduled_) {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(30));
+                }
+                ready_for_new_frames_.release();
+                last_frame_ = frame;
+            }
 
             if (!is_running_)
                 return E_FAIL;
@@ -617,6 +685,15 @@ struct decklink_consumer
         }
 
         return S_OK;
+    }
+
+    std::pair<core::frame_timecode, core::const_frame> last_frame_;
+
+    int dropped_last_frame()
+    {
+        auto r =  dropped_last_frame_;
+        dropped_last_frame_ = 0;
+        return r;
     }
 
     template <typename T>
@@ -655,6 +732,15 @@ struct decklink_consumer
         video_scheduled_ += format_desc_.duration;
     }
 
+    std::future<bool> ready_to_send()
+    {
+        auto send_completion = spl::make_shared<std::promise<bool>>();
+        ready_for_new_frames_.acquire(1, [send_completion] { send_completion->set_value(true); });
+
+        return send_completion->get_future();
+    }
+
+    prec_timer							sync_timer_;
     std::future<bool> send(core::frame_timecode timecode, core::const_frame frame)
     {
         auto exception = lock(exception_mutex_, [&] { return exception_; });
@@ -669,9 +755,11 @@ struct decklink_consumer
 
         auto send_completion = spl::make_shared<std::promise<bool>>();
 
+        //sync_timer_.tick(0.5 / format_desc_.fps); // TODO ????? This will force it to run at fastest of half channel speed
         ready_for_new_frames_.acquire(1, [send_completion] { send_completion->set_value(true); });
 
         return send_completion->get_future();
+        //return make_ready_future(true);
     }
 
     std::wstring print() const
@@ -728,14 +816,27 @@ struct decklink_consumer_proxy : public core::frame_consumer
         });
     }
 
+    std::future<bool> ready_to_send() override
+    {
+        return consumer_->ready_to_send();
+    }
+
     std::future<bool> send(core::frame_timecode timecode, core::const_frame frame) override
     {
         return consumer_->send(timecode, frame);
     }
 
+    bool							has_synchronization_clock() const override
+    {
+        //return false;
+        return true;
+    }
+
     std::wstring print() const override { return consumer_ ? consumer_->print() : L"[decklink_consumer]"; }
 
     std::wstring name() const override { return L"decklink"; }
+
+    int dropped_last_frame() const override { return consumer_ ? consumer_->dropped_last_frame() : 0; }
 
     boost::property_tree::wptree info() const override
     {

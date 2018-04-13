@@ -401,6 +401,11 @@ public:
 		return video_decoder_ ? video_decoder_->file_frame_number() : 0;
 	}
 
+        uint32_t frame_number() const override
+        {
+            return muxer_->calc_nb_frames(file_frame_number());
+        }
+
 	uint32_t nb_frames() const override
 	{
 		if (is_url() || input_.loop())

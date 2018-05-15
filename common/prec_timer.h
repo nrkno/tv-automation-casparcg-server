@@ -30,23 +30,22 @@ class prec_timer
 public:
 	prec_timer();
 
-	void tick(double interval)
+	int64_t tick(double interval)
 	{
-		tick_nanos(static_cast<int64_t>(interval * 1000000000.0));
+		return tick_nanos(static_cast<int64_t>(interval * 1000000000.0));
 	}
 	
-	void tick_millis(int64_t interval)
+        int64_t tick_millis(int64_t interval)
 	{
-		tick_nanos(interval * 1000000);
+		return tick_nanos(interval * 1000000);
 	}
 
 	// Author: Ryan M. Geiss
 	// http://www.geisswerks.com/ryan/FAQS/timing.html
-	void tick_nanos(int64_t interval);
+        int64_t tick_nanos(int64_t interval);
 
 private:	
 	int64_t time_;
 };
-
 
 }

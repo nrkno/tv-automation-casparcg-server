@@ -36,12 +36,18 @@ prec_timer::prec_timer()
 {
 }
 
-void prec_timer::tick_nanos(int64_t ticks_to_wait)
+int64_t prec_timer::tick_nanos(int64_t ticks_to_wait)
 {
 	auto t = duration_cast<nanoseconds>(high_resolution_clock::now().time_since_epoch()).count();
 
-	if (time_ != 0)
+	if (time_ != 0 && ticks_to_wait > 0)
 	{
+                int64_t orig_time = time_;
+
+                int64_t skipped_intervals = static_cast<int64_t>((floor((t - time_) / ticks_to_wait) - 0.5));
+                if (skipped_intervals > 0)
+                    time_ += skipped_intervals * ticks_to_wait;
+
 		bool done = 0;
 		do
 		{
@@ -70,9 +76,14 @@ void prec_timer::tick_nanos(int64_t ticks_to_wait)
 
 			t = duration_cast<nanoseconds>(high_resolution_clock::now().time_since_epoch()).count();
 		} while (!done);
-	}
 
-	time_ = t;
+                time_ += ticks_to_wait;
+                return t - orig_time;
+        }
+        else {
+            time_ = t;
+            return 0;
+        }
 }
 
 }

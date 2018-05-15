@@ -828,8 +828,8 @@ struct decklink_consumer_proxy : public core::frame_consumer
 
     bool							has_synchronization_clock() const override
     {
-        //return false;
-        return true;
+        return false;
+        //return true;
     }
 
     std::wstring print() const override { return consumer_ ? consumer_->print() : L"[decklink_consumer]"; }

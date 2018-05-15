@@ -60,7 +60,6 @@ struct output::impl
 	audio_channel_layout				channel_layout_;
 	std::map<int, port>					ports_;
 	prec_timer							sync_timer_;
-        caspar::timer							sync_timer2_;
 	std::map<int, int64_t>				send_to_consumers_delays_;
 	executor							executor_					{ L"output " + boost::lexical_cast<std::wstring>(channel_index_) };
 public:
@@ -238,19 +237,22 @@ public:
 				}
 			}
 
-                        auto el = sync_timer2_.elapsed();
-                        sync_timer2_.restart();
+                        int frames = 1;
+                        //frames = did_drop_frame();
 
-                        auto frames = static_cast<int>(round(el / (1.0 / format_desc_.fps)));
-                        frames = did_drop_frame();
+                        //if (!has_synchronization_clock())
+                        {
+                            
+                            auto elapsed = sync_timer_.tick(1.0 / format_desc_.fps) / 1000000000.0;
+                            frames = static_cast<int>(round(elapsed / (1.0 / format_desc_.fps)));
+                                
+                        }
 
-                    if (frames > 1)
-                    {
-                        CASPAR_LOG(info) << "Elapse: " << frames;
-                    }
 
-			if (!has_synchronization_clock())
-				sync_timer_.tick(1.0 / format_desc_.fps);
+                        if (frames > 1)
+                        {
+                            CASPAR_LOG(info) << "Elapse: " << frames;
+                        }
 
 			auto consume_time = frame_timer->elapsed();
 			graph_->set_value("consume-time", consume_time * format_desc.fps * 0.5);
@@ -258,7 +260,7 @@ public:
 				<< monitor::message("/consume_time") % consume_time
 				<< monitor::message("/profiler/time") % consume_time % (1.0 / format_desc.fps);
 
-			return frames;
+			return frames - 1;
 		});
 	}
 

@@ -428,6 +428,7 @@ struct decklink_consumer
 
     tbb::concurrent_bounded_queue<std::pair<core::frame_timecode, core::const_frame>> frame_buffer_;
     caspar::semaphore                                                                 ready_for_new_frames_{0};
+    std::pair<core::frame_timecode, core::const_frame> last_frame_ = std::make_pair(core::frame_timecode::empty(), core::const_frame::empty());
     int									      dropped_last_frame_ = 0;
 
     spl::shared_ptr<diagnostics::graph>               graph_;
@@ -436,6 +437,11 @@ struct decklink_consumer
     tbb::atomic<int64_t>                              current_presentation_delay_;
     tbb::atomic<int64_t>                              scheduled_frames_completed_;
     std::unique_ptr<key_video_context<Configuration>> key_context_;
+
+    std::thread       thread_;
+    caspar::semaphore buffer_ready_for_frames_{ 0 };
+    tbb::atomic<int> in_buffer_count_;
+
 
   public:
     decklink_consumer(const configuration&              config,
@@ -482,12 +488,13 @@ struct decklink_consumer
         if (config.embedded_audio)
             output_->BeginAudioPreroll();
 
+
         for (int n = 0; n < buffer_size_; ++n) {
             if (config.embedded_audio)
                 schedule_next_audio(
                     core::mutable_audio_buffer(format_desc_.audio_cadence[n % format_desc_.audio_cadence.size()] *
-                                                   out_channel_layout_.num_channels,
-                                               0));
+                        out_channel_layout_.num_channels,
+                        0));
 
             schedule_next_video(core::const_frame::empty(), core::frame_timecode::empty());
         }
@@ -496,13 +503,44 @@ struct decklink_consumer
             output_->EndAudioPreroll();
         }
 
+        //buffer_ready_for_frames_.release();
+        thread_ = std::thread([=] {
+            try {
+                while (is_running_) {
+                    auto tick_time = tick_timer_.elapsed() * format_desc_.fps * 0.5;
+                    graph_->set_value("tick-time", tick_time);
+                    tick_timer_.restart();
+
+                    CASPAR_LOG(warning) << L"pulling channel frame";
+
+                    auto frame = std::make_pair(core::frame_timecode::empty(), core::const_frame::empty());
+                    frame_buffer_.pop(frame);
+
+                    CASPAR_LOG(warning) << L"pushing channel frame";
+                    //buffer_ready_for_frames_.acquire();
+
+                    ready_for_new_frames_.release();
+
+                    // TODO audio
+                    schedule_next_video(frame.second, frame.first);
+
+                    // TODO - handle schedule_time here instead???
+                }
+            }
+            catch (...) {
+                CASPAR_LOG_CURRENT_EXCEPTION();
+            }
+        });
+
         start_playback();
     }
 
     ~decklink_consumer()
     {
         is_running_ = false;
+        buffer_ready_for_frames_.release();
         frame_buffer_.try_push(std::make_pair(core::frame_timecode::empty(), core::const_frame::empty()));
+        thread_.join();
 
         if (output_ != nullptr) {
             output_->StopScheduledPlayback(0, nullptr, 0);
@@ -575,10 +613,8 @@ struct decklink_consumer
             return E_FAIL;
 
         try {
-            auto tick_time = tick_timer_.elapsed() * format_desc_.fps * 0.5;
-            graph_->set_value("tick-time", tick_time);
-            tick_timer_.restart();
-
+            in_buffer_count_--;
+            
             reference_signal_detector_.detect_change([this]() { return print(); });
 
             auto dframe                 = reinterpret_cast<decklink_frame*>(completed_frame);
@@ -592,7 +628,7 @@ struct decklink_consumer
                         0.5);
 
             UINT32 buffered;
-            if (!FAILED(output_->GetBufferedVideoFrameCount(&buffered))) {
+            if (!FAILED(output_->GetBufferedVideoFrameCount(&buffered))) { // TODO - always at full??
                 graph_->set_value("buffered-video", static_cast<double>(buffered) / (config_.buffer_depth()));
             }
 
@@ -600,7 +636,7 @@ struct decklink_consumer
             long long time_now;
             if (FAILED(output_->GetScheduledStreamTime(format_desc_.time_scale, &time_now, &speed)))
                 time_now = 0;
-            
+                       
 
             if (result == bmdOutputFrameDisplayedLate) {
                 graph_->set_tag(diagnostics::tag_severity::WARNING, "late-frame");
@@ -635,6 +671,21 @@ struct decklink_consumer
             else if (result == bmdOutputFrameFlushed)
                 graph_->set_tag(diagnostics::tag_severity::WARNING, "flushed-frame");
 
+            CASPAR_LOG(warning) << L"frame complete. Buffer: " << buffered;
+
+
+            if (buffered < 2 || result != bmdOutputFrameCompleted) {
+                // TODO - lock
+                schedule_next_video(last_frame_.second, last_frame_.first);
+            }
+            else {
+                buffer_ready_for_frames_.release();
+            }
+
+
+
+
+            /*
 
             if (config_.embedded_audio) {
                 UINT32 buffered2;
@@ -646,31 +697,12 @@ struct decklink_consumer
 
             auto frame = std::make_pair(core::frame_timecode::empty(), core::const_frame::empty());
 
-	    if (++frame_count > 500 && frame_count % (25*10) == 0) {
-		    //std::this_thread::sleep_for(std::chrono::milliseconds(80));
-	    }
-
-            //dropped_last_frame_ = dropped_last_frame_ || result == bmdOutputFrameDisplayedLate; // TODO detect that buffer is refilling? TODO should this not be above the pop?
-
-            /*
-            while(frame_buffer_.size() == 0 && static_cast<int>(buffered) > format_desc_.audio_cadence[0])
-            {
-                boost::this_thread::sleep_for(boost::chrono::milliseconds(1));
-                output_->GetBufferedAudioSampleFrameCount(&buffered);
+            frame_buffer_.pop(frame);
+            if (time_now +(config_.buffer_depth()-1) * format_desc_.duration == video_scheduled_) { // TODO - this isnt great
+                std::this_thread::sleep_for(std::chrono::milliseconds(30));
             }
-            if (frame_buffer_.size() == 0)
-            {
-                frame = last_frame_;
-            }
-            else */
-            {
-                frame_buffer_.pop(frame);
-                if (time_now +(config_.buffer_depth()-1) * format_desc_.duration == video_scheduled_) {
-                    std::this_thread::sleep_for(std::chrono::milliseconds(30));
-                }
-                ready_for_new_frames_.release();
-                last_frame_ = frame;
-            }
+            ready_for_new_frames_.release();
+            last_frame_ = frame;
 
             if (!is_running_)
                 return E_FAIL;
@@ -679,6 +711,7 @@ struct decklink_consumer
                 schedule_next_audio(channel_remapper_.mix_and_rearrange(frame.second.audio_data()));
 
             schedule_next_video(frame.second, frame.first);
+            */
         } catch (...) {
             lock(exception_mutex_, [&] { exception_ = std::current_exception(); });
             return E_FAIL;
@@ -686,8 +719,6 @@ struct decklink_consumer
 
         return S_OK;
     }
-
-    std::pair<core::frame_timecode, core::const_frame> last_frame_;
 
     int dropped_last_frame()
     {
@@ -730,17 +761,20 @@ struct decklink_consumer
             CASPAR_LOG(error) << print() << L" Failed to schedule fill video.";
 
         video_scheduled_ += format_desc_.duration;
+        in_buffer_count_++;
     }
 
     std::future<bool> ready_to_send()
     {
+        return make_ready_future<bool>(true);
+        /*
         auto send_completion = spl::make_shared<std::promise<bool>>();
         ready_for_new_frames_.acquire(1, [send_completion] { send_completion->set_value(true); });
 
         return send_completion->get_future();
+        */
     }
 
-    prec_timer							sync_timer_;
     std::future<bool> send(core::frame_timecode timecode, core::const_frame frame)
     {
         auto exception = lock(exception_mutex_, [&] { return exception_; });
@@ -753,13 +787,13 @@ struct decklink_consumer
 
         frame_buffer_.push(std::make_pair(timecode, frame));
 
+        return make_ready_future<bool>(true);
+        /*
         auto send_completion = spl::make_shared<std::promise<bool>>();
 
-        //sync_timer_.tick(0.5 / format_desc_.fps); // TODO ????? This will force it to run at fastest of half channel speed
         ready_for_new_frames_.acquire(1, [send_completion] { send_completion->set_value(true); });
 
-        return send_completion->get_future();
-        //return make_ready_future(true);
+        return send_completion->get_future();*/
     }
 
     std::wstring print() const

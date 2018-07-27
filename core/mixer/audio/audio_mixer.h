@@ -60,7 +60,7 @@ public:
 	// frame_visitor
 
 	virtual void push(const struct frame_transform& transform);
-	virtual void visit(const class const_frame& frame);
+        virtual void visit(const class const_frame& frame, std::string ids);
 	virtual void pop();
 	
 	// Properties

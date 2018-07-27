@@ -51,6 +51,8 @@ struct buffer::impl : boost::noncopyable
 	GLenum						usage_;
 	GLenum						target_;
 
+        std::string name_;
+
 public:
 	impl(std::size_t size, buffer::usage usage) 
 		: size_(size)
@@ -106,7 +108,7 @@ public:
 		data_ = (uint8_t*) result;
 
 		if(timer.elapsed() > 0.02)
-			CASPAR_LOG(warning) << L"[buffer] Performance warning. Buffer mapping blocked: " << timer.elapsed();
+			CASPAR_LOG(warning) << L"[buffer] Performance warning. Buffer mapping blocked: " << timer.elapsed() << " " << name_;
 
 		GL(glBindBuffer(target_, 0));
 		if(!data_)
@@ -150,6 +152,7 @@ void buffer::bind() const{impl_->bind();}
 void buffer::unbind() const{impl_->unbind();}
 std::size_t buffer::size() const { return impl_->size_; }
 int buffer::id() const {return impl_->pbo_;}
+void            buffer::set_name(std::string id) { impl_->name_ = id; }
 
 boost::property_tree::wptree buffer::info()
 {

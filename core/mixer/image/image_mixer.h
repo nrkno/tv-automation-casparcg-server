@@ -56,7 +56,7 @@ public:
 	// Methods
 
 	virtual void push(const struct frame_transform& frame) = 0;
-	virtual void visit(const class const_frame& frame) = 0;
+        virtual void visit(const class const_frame& frame, std::string id) = 0;
 	virtual void pop() = 0;
 		
 	virtual std::future<array<const std::uint8_t>> operator()(const struct video_format_desc& format_desc, bool straighten_alpha) = 0;

@@ -26,10 +26,14 @@
 
 #include <common/memory.h>
 
+#include <boost/lexical_cast.hpp>
+
 #include <vector>
 
 namespace caspar { namespace core {
-	
+
+inline std::string      id_append(std::string id, int i) { return id + "-" + boost::lexical_cast<std::string>(i); }
+
 class draw_frame final
 {
 public:		
@@ -61,7 +65,7 @@ public:
 
 	void swap(draw_frame& other);	
 	
-	void accept(frame_visitor& visitor) const;
+	void accept(frame_visitor& visitor, std::string id) const;
 	
 	int64_t get_and_record_age_millis();
 	

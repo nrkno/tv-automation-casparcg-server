@@ -54,9 +54,9 @@ public:
 	array<std::uint8_t>		 create_array(int size);
 		
 	// NOTE: Since the returned texture is cached it SHOULD NOT be modified.
-	std::future<std::shared_ptr<texture>>	copy_async(const array<const std::uint8_t>& source, int width, int height, int stride, bool mipmapped);
+	std::future<std::shared_ptr<texture>>	copy_async(std::string id, const array<const std::uint8_t>& source, int width, int height, int stride, bool mipmapped);
 
-	std::future<std::shared_ptr<texture>>	copy_async(const array<std::uint8_t>& source, int width, int height, int stride, bool mipmapped);
+	std::future<std::shared_ptr<texture>>	copy_async(std::string id, const array<std::uint8_t>& source, int width, int height, int stride, bool mipmapped);
 	std::future<array<const std::uint8_t>>	copy_async(const spl::shared_ptr<texture>& source);
 			
 	template<typename Func>

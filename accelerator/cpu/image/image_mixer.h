@@ -29,7 +29,7 @@ public:
 	// Methods	
 
 	virtual void push(const core::frame_transform& frame);
-	virtual void visit(const core::const_frame& frame);
+        virtual void visit(const core::const_frame& frame, std::string ids);
 	virtual void pop();
 		
 	std::future<array<const std::uint8_t>> operator()(const core::video_format_desc& format_desc, bool straighten_alpha) override;

@@ -326,7 +326,7 @@ public:
 
 audio_mixer::audio_mixer(spl::shared_ptr<diagnostics::graph> graph) : impl_(new impl(std::move(graph))){}
 void audio_mixer::push(const frame_transform& transform){impl_->push(transform);}
-void audio_mixer::visit(const const_frame& frame){impl_->visit(frame);}
+void audio_mixer::visit(const const_frame& frame, std::string id){impl_->visit(frame);}
 void audio_mixer::pop(){impl_->pop();}
 void audio_mixer::set_master_volume(float volume) { impl_->set_master_volume(volume); }
 float audio_mixer::get_master_volume() { return impl_->get_master_volume(); }

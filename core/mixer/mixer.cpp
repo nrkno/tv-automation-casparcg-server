@@ -94,9 +94,11 @@ public:
 
 				for (auto& frame : frames)
 				{
-					frame.second.accept(audio_mixer_);
+                                    std::string id = boost::lexical_cast<std::string>(channel_index_) + "-" +
+                                                     boost::lexical_cast<std::string>(frame.first);
+					frame.second.accept(audio_mixer_, id);
 					frame.second.transform().image_transform.layer_depth = 1;
-					frame.second.accept(*image_mixer_);
+					frame.second.accept(*image_mixer_, id);
 				}
 				
 				auto image = (*image_mixer_)(format_desc, straighten_alpha_);

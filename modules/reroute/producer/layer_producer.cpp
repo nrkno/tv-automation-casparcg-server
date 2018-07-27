@@ -113,7 +113,7 @@ std::vector<core::draw_frame> extract_actual_frames(core::draw_frame original, c
 				visiting_mode = transform.image_transform.field_mode;
 		}
 
-		void visit(const core::const_frame& frame) override
+		void visit(const core::const_frame& frame, std::string id) override
 		{
 			if (visiting_mode == field_order_first && fields.size() == 0)
 				fields.push_back(core::draw_frame(core::const_frame(frame)));
@@ -128,7 +128,7 @@ std::vector<core::draw_frame> extract_actual_frames(core::draw_frame original, c
 	};
 
 	field_extractor extractor(field_order);
-	original.accept(extractor);
+	original.accept(extractor, "LP");
 
 	if (extractor.fields.size() == 2)
 		return std::move(extractor.fields);

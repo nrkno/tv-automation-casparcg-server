@@ -133,7 +133,7 @@ public:
 		transform_stack_.pop();
 	}
 
-	void visit(const const_frame& frame) override
+	void visit(const const_frame& frame, std::string id) override
 	{
 		if (!frame.audio_data().empty() && !transform_stack_.top().is_still && !transform_stack_.top().volume == 0.0)
 			on_frame_(frame);
@@ -429,7 +429,7 @@ private:
 				audio_samples_.insert(audio_samples_.end(), buffer.begin(), buffer.end());
 			});
 
-			frame.accept(extractor);
+			frame.accept(extractor, "FP");
 		}
 		else
 		{

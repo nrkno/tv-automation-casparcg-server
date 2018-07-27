@@ -308,7 +308,7 @@ public:
 
 	}
 
-	void visit(const core::const_frame& frame)
+	void visit(const core::const_frame& frame, std::string id)
 	{
 		if(frame.pixel_format_desc().format == core::pixel_format::invalid)
 			return;
@@ -318,7 +318,7 @@ public:
 
 		if(transform_stack_.back().field_mode == core::field_mode::empty)
 			return;
-
+                
 		item item;
 		item.pix_desc	= frame.pixel_format_desc();
 		item.transform	= transform_stack_.back();
@@ -326,7 +326,8 @@ public:
 
 		// NOTE: Once we have copied the arrays they are no longer valid for reading!!! Check for alternative solution e.g. transfer with AMD_pinned_memory.
 		for(int n = 0; n < static_cast<int>(item.pix_desc.planes.size()); ++n)
-			item.textures.push_back(ogl_->copy_async(frame.image_data(n), item.pix_desc.planes[n].width, item.pix_desc.planes[n].height, item.pix_desc.planes[n].stride, item.transform.use_mipmap));
+                        // TODO - append to id?
+			item.textures.push_back(ogl_->copy_async(id, frame.image_data(n), item.pix_desc.planes[n].width, item.pix_desc.planes[n].height, item.pix_desc.planes[n].stride, item.transform.use_mipmap));
 
 		layer_stack_.back()->items.push_back(item);
 	}
@@ -365,7 +366,7 @@ public:
 image_mixer::image_mixer(const spl::shared_ptr<device>& ogl, bool blend_modes_wanted, bool straight_alpha_wanted, int channel_id) : impl_(new impl(ogl, blend_modes_wanted, straight_alpha_wanted, channel_id)){}
 image_mixer::~image_mixer(){}
 void image_mixer::push(const core::frame_transform& transform){impl_->push(transform);}
-void image_mixer::visit(const core::const_frame& frame){impl_->visit(frame);}
+void image_mixer::visit(const core::const_frame& frame, std::string id){impl_->visit(frame, id);}
 void image_mixer::pop(){impl_->pop();}
 int image_mixer::get_max_frame_size() { return impl_->get_max_frame_size(); }
 std::future<array<const std::uint8_t>> image_mixer::operator()(const core::video_format_desc& format_desc, bool straighten_alpha){return impl_->render(format_desc, straighten_alpha);}

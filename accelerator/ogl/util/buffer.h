@@ -59,6 +59,8 @@ public:
 	void bind() const;
 	void unbind() const;
 
+        void set_name(std::string id);
+
 	// Properties
 
 	uint8_t* data();

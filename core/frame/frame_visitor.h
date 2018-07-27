@@ -40,7 +40,7 @@ public:
 	// Methods
 
 	virtual void push(const frame_transform& transform) = 0;
-	virtual void visit(const const_frame& frame) = 0;
+	virtual void visit(const const_frame& frame, std::string id) = 0;
 	virtual void pop() = 0;
 
 	// Properties

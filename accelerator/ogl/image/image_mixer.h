@@ -55,7 +55,7 @@ public:
 	// core::image_mixer
 
 	void push(const core::frame_transform& frame) override;
-	void visit(const core::const_frame& frame) override;
+	void visit(const core::const_frame& frame, std::string id) override;
 	void pop() override;
 			
 	// Properties

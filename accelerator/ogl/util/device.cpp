@@ -315,9 +315,10 @@ struct device::impl : public std::enable_shared_from_this<impl>
 	}
 
 	// TODO: Since the returned texture is cached it SHOULD NOT be modified.
-	std::future<std::shared_ptr<texture>> copy_async(const array<const std::uint8_t>& source, int width, int height, int stride, bool mipmapped)
+	std::future<std::shared_ptr<texture>> copy_async(std::string id, const array<const std::uint8_t>& source, int width, int height, int stride, bool mipmapped)
 	{
 		std::shared_ptr<buffer> buf = copy_to_buf(source);
+                buf->set_name(id);
 		auto context = executor_.is_current() ? std::string() : get_context();
 
 		return executor_.begin_invoke([=]() -> std::shared_ptr<texture>
@@ -336,9 +337,10 @@ struct device::impl : public std::enable_shared_from_this<impl>
 		}, task_priority::high_priority);
 	}
 	
-	std::future<std::shared_ptr<texture>> copy_async(const array<std::uint8_t>& source, int width, int height, int stride, bool mipmapped)
+	std::future<std::shared_ptr<texture>> copy_async(std::string id, const array<std::uint8_t>& source, int width, int height, int stride, bool mipmapped)
 	{
 		std::shared_ptr<buffer> buf = copy_to_buf(source);
+                buf->set_name(id);
 		auto context = executor_.is_current() ? std::string() : get_context();
 
 		return executor_.begin_invoke([=]() -> std::shared_ptr<texture>
@@ -406,8 +408,8 @@ device::device()
 device::~device(){}
 spl::shared_ptr<texture>					device::create_texture(int width, int height, int stride, bool mipmapped){ return impl_->create_texture(width, height, stride, mipmapped, true); }
 array<std::uint8_t>							device::create_array(int size){return impl_->create_array(size);}
-std::future<std::shared_ptr<texture>>		device::copy_async(const array<const std::uint8_t>& source, int width, int height, int stride, bool mipmapped){return impl_->copy_async(source, width, height, stride, mipmapped);}
-std::future<std::shared_ptr<texture>>		device::copy_async(const array<std::uint8_t>& source, int width, int height, int stride, bool mipmapped){ return impl_->copy_async(source, width, height, stride, mipmapped); }
+std::future<std::shared_ptr<texture>>		device::copy_async(std::string id, const array<const std::uint8_t>& source, int width, int height, int stride, bool mipmapped){return impl_->copy_async(id, source, width, height, stride, mipmapped);}
+std::future<std::shared_ptr<texture>>		device::copy_async(std::string id, const array<std::uint8_t>& source, int width, int height, int stride, bool mipmapped){ return impl_->copy_async(id, source, width, height, stride, mipmapped); }
 std::future<array<const std::uint8_t>>		device::copy_async(const spl::shared_ptr<texture>& source){return impl_->copy_async(source);}
 std::future<void>							device::gc() { return impl_->gc(); }
 boost::property_tree::wptree				device::info() const { return impl_->info(); }

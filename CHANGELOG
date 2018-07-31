@@ -1,5 +1,16 @@
 C H A N G E S
 
+CasparCG 2.1.0 NRK RC2 (w.r.t 2.1.0 NRK RC1)
+==========================================
+
+  o Sting transition producer
+
+  o Route layer background producer
+
+  o Fix win10 console quick edit mode
+
+  o Fix HTML spamming trace log with browser-dropped-frame
+
 CasparCG 2.1.0 NRK RC1 (w.r.t 2.1.0 Next)
 ==========================================
 

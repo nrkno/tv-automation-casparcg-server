@@ -229,37 +229,45 @@ struct stage::impl : public std::enable_shared_from_this<impl>
                            bool                                   preview,
                            const boost::optional<int32_t>&        auto_play_delta)
     {
+		*monitor_subject_ << monitor::message("/layer/" + std::to_string(index) + "/event/load") % true;
+		
         return executor_.begin_invoke([=] { get_layer(index).load(producer, preview, auto_play_delta); },
                                       task_priority::high_priority);
     }
 
     std::future<void> pause(int index)
     {
+		*monitor_subject_ << monitor::message("/layer/" + std::to_string(index) + "/event/pause") % true;
         return executor_.begin_invoke([=] { get_layer(index).pause(); }, task_priority::high_priority);
     }
 
     std::future<void> resume(int index)
     {
+		*monitor_subject_ << monitor::message("/layer/" + std::to_string(index) + "/event/resume") % true;
         return executor_.begin_invoke([=] { get_layer(index).resume(); }, task_priority::high_priority);
     }
 
     std::future<void> play(int index)
     {
-        return executor_.begin_invoke([=] { get_layer(index).play(); }, task_priority::high_priority);
+		*monitor_subject_ << monitor::message("/layer/" + std::to_string(index) + "/event/play") % true;
+		return executor_.begin_invoke([=] { get_layer(index).play(); }, task_priority::high_priority);
     }
 
     std::future<void> stop(int index)
     {
+		*monitor_subject_ << monitor::message("/layer/" + std::to_string(index) + "/event/stop") % true;
         return executor_.begin_invoke([=] { get_layer(index).stop(); }, task_priority::high_priority);
     }
 
     std::future<void> clear(int index)
     {
+		*monitor_subject_ << monitor::message("/layer/" + std::to_string(index) + "/event/clear") % true;
         return executor_.begin_invoke([=] { layers_.erase(index); }, task_priority::high_priority);
     }
 
     std::future<void> clear()
     {
+        *monitor_subject_ << monitor::message("/event/clear") % true; // Hreinn OSC stage clear
         return executor_.begin_invoke([=] { layers_.clear(); }, task_priority::high_priority);
     }
 
@@ -292,12 +300,13 @@ struct stage::impl : public std::enable_shared_from_this<impl>
             if (swap_transforms)
                 std::swap(tweens_, other_impl->tweens_);
         };
-
+        *monitor_subject_ << monitor::message("/event/swap") % true;
         return invoke_both(other, func);
     }
 
     std::future<void> swap_layer(int index, int other_index, bool swap_transforms)
     {
+		*monitor_subject_ << monitor::message("/layer/" + std::to_string(index) + "/event/swap") % index % other_index;
         return executor_.begin_invoke(
             [=] {
                 std::swap(get_layer(index), get_layer(other_index));
@@ -311,6 +320,8 @@ struct stage::impl : public std::enable_shared_from_this<impl>
     std::future<void> swap_layer(int index, int other_index, const std::shared_ptr<stage>& other, bool swap_transforms)
     {
         auto other_impl = other->impl_;
+
+		*monitor_subject_ << monitor::message("/layer/" + std::to_string(index) + "/event/swaptransforms") % index % other_index;
 
         if (other_impl.get() == this)
             return swap_layer(index, other_index, swap_transforms);
@@ -355,6 +366,7 @@ struct stage::impl : public std::enable_shared_from_this<impl>
             layer_consumers_[layer].insert(std::make_pair(token, std::make_pair(mode, layer_consumer)));
         },
             task_priority::high_priority);
+		*monitor_subject_ << monitor::message("/event/add") % true;
     }
 
     void remove_layer_consumer(void* token, int layer)
@@ -368,6 +380,7 @@ struct stage::impl : public std::enable_shared_from_this<impl>
                 }
             },
             task_priority::high_priority);
+        *monitor_subject_ << monitor::message("/event/remove") % true;
     }
 
     std::future<std::shared_ptr<frame_producer>> foreground(int index)

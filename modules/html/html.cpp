@@ -42,6 +42,8 @@
 
 #include <map>
 
+#include "../version.h"
+
 #pragma warning(push)
 #pragma warning(disable: 4458)
 #include <cef_app.h>
@@ -98,6 +100,37 @@ public:
 	IMPLEMENT_REFCOUNTING(remove_handler);
 };
 
+class function_handler : public CefV8Handler
+{
+	CefRefPtr<CefBrowser> browser_;
+
+public:
+	function_handler(CefRefPtr<CefBrowser> browser)
+		: browser_(browser)
+	{
+	}
+
+	bool Execute(//std::weak_ptr<caspar::IO::protocol_strategy<wchar_t>> amcp,
+		const CefString&       name,
+		CefRefPtr<CefV8Value>  object,
+		const CefV8ValueList&  arguments,
+		CefRefPtr<CefV8Value>& retval,
+		CefString&             exception) //override
+	{
+		if (name == "amcp") {
+			retval = CefV8Value::CreateString("AMCP NOT IMPLEMENTED YET");
+			return true;
+		}
+		else if (name == "osc") {
+			retval = CefV8Value::CreateString("OSC NOT IMPLEMENTED YET");
+			return true;
+		}
+		return false;
+	}
+
+	IMPLEMENT_REFCOUNTING(function_handler);
+};
+
 class renderer_application : public CefApp, CefRenderProcessHandler
 {
 	std::vector<CefRefPtr<CefV8Context>> contexts_;
@@ -132,6 +165,40 @@ public:
 						"remove",
 						new remove_handler(browser)),
 				V8_PROPERTY_ATTRIBUTE_NONE);
+		
+		// window.casparg
+		// Future improvements:
+		// - Return channel and layer that HTML is running on (so you can easily automate templates without knowing chan/layer (like playing a video on the layer beneath: window.casparcg.amcp('PLAY '+window.casparcg.channel+'-'+(window.casparcg.layer-1)+' AMB LOOP');
+		// - Return framerate for animations that depend on fps for durations (don't confuse with tick we already have, that doesn't help a template that should be able to run 1 sec animation irrespective of the framerate
+		// - Return paths (window.casparcg.media, .template, .font, .data, .log, .thumbnail etc.) [all should be relative and users could use window.casparcg.initialpath to create a full path]
+		CefRefPtr<CefV8Value> casparObj = CefV8Value::CreateObject(0, 0);
+		window->SetValue("casparcg", casparObj, V8_PROPERTY_ATTRIBUTE_NONE);
+
+		// window.casparcg.amcp function:
+		// Would run custom AMCP commands like: window.casparcg.amcp('PLAY 1-10 AMB');
+		// THIS IS NOT HOOKED UP TO AMCP - WILL NOT FUNCTION
+		casparObj->SetValue("amcp", CefV8Value::CreateFunction("amcp", new function_handler(browser)), V8_PROPERTY_ATTRIBUTE_NONE);
+
+		// window.casparcg.osc function:
+		// Would allow HTML to send out OSC messages like: window.casparcg.osc('/address','message'); - OSC output like: /channel/1/stage/layer/10/html/address {msg}
+		// THIS IS NOT HOOKED UP TO OSC - WILL NOT FUNCTION
+		casparObj->SetValue("osc", CefV8Value::CreateFunction("osc", new function_handler(browser)), V8_PROPERTY_ATTRIBUTE_NONE);
+
+		// window.casparcg.fullversion single:
+		// Returns: "CasparCG Video and Graphics Playout Server 2.1.0.10254 38d4e6478 NRK"
+		casparObj->SetValue("fullversion", CefV8Value::CreateString(L"CasparCG Video and Graphics Playout Server " + env::version()), V8_PROPERTY_ATTRIBUTE_NONE);
+
+		// window.casparcg.version complete:
+		// Returns an object like: {"name":"CasparCG Video and Graphics Playout Server","general":2,"major":1,"minor":0,"tag":"NRK HB","revision":10254,"hash":"38d4e6478"}
+		auto completeVersion = CefV8Value::CreateObject(0, 0);
+		completeVersion->SetValue("name", CefV8Value::CreateString("CasparCG Video and Graphics Playout Server"), V8_PROPERTY_ATTRIBUTE_READONLY);
+		completeVersion->SetValue("general", CefV8Value::CreateInt(CASPAR_GEN), V8_PROPERTY_ATTRIBUTE_READONLY);
+		completeVersion->SetValue("major", CefV8Value::CreateInt(CASPAR_MAYOR), V8_PROPERTY_ATTRIBUTE_READONLY);
+		completeVersion->SetValue("minor", CefV8Value::CreateInt(CASPAR_MINOR), V8_PROPERTY_ATTRIBUTE_READONLY);
+		completeVersion->SetValue("tag", CefV8Value::CreateString(CASPAR_TAG), V8_PROPERTY_ATTRIBUTE_READONLY);
+		completeVersion->SetValue("revision", CefV8Value::CreateInt(CASPAR_REV), V8_PROPERTY_ATTRIBUTE_READONLY);
+		completeVersion->SetValue("hash", CefV8Value::CreateString(CASPAR_HASH), V8_PROPERTY_ATTRIBUTE_READONLY);
+		casparObj->SetValue("version", completeVersion, V8_PROPERTY_ATTRIBUTE_READONLY);
 
 		CefRefPtr<CefV8Value> ret;
 		CefRefPtr<CefV8Exception> exception;
@@ -264,6 +331,7 @@ void init(core::module_dependencies dependencies)
 		settings.no_sandbox = true;
 		settings.remote_debugging_port = env::properties().get(L"configuration.html.remote-debugging-port", 0);
 		settings.windowless_rendering_enabled = true;
+		CefString(&settings.user_agent) = L"CasparCG Video and Graphics Playout Server " + env::version();
 		CefInitialize(main_args, settings, CefRefPtr<CefApp>(new renderer_application(enable_gpu)), nullptr);
 	});
 	g_cef_executor->begin_invoke([&]

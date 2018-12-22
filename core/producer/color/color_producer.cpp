@@ -103,7 +103,7 @@ public:
 
 	draw_frame receive_impl() override
 	{
-		monitor_subject_ << monitor::message("color") % color_str_;
+		monitor_subject_ << monitor::message("/color") % color_str_;
 
 		return frame_;
 	}

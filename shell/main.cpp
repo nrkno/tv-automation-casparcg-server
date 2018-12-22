@@ -118,13 +118,15 @@ void do_run(std::weak_ptr<caspar::IO::protocol_strategy<wchar_t>> amcp,
         if (!std::getline(std::wcin, wcmd)) // TODO: It's blocking...
             wcmd = L"EXIT";                 // EOF, handle as EXIT
 
-        if (boost::iequals(wcmd, L"EXIT") || boost::iequals(wcmd, L"Q") || boost::iequals(wcmd, L"QUIT") ||
-            boost::iequals(wcmd, L"BYE")) {
-            CASPAR_LOG(info) << L"Received message from Console: " << wcmd << L"\\r\\n";
-            should_wait_for_keypress = true;
-            shutdown_server_now.set_value(false); // false to not restart
-            break;
-        }
+		
+		if (wcmd != L"") {
+			if (boost::iequals(wcmd, L"EXIT") || boost::iequals(wcmd, L"Q") || boost::iequals(wcmd, L"QUIT") ||
+				boost::iequals(wcmd, L"BYE")) {
+				CASPAR_LOG(info) << L"Received message from Console: " << wcmd << L"\\r\\n";
+				should_wait_for_keypress = true;
+				shutdown_server_now.set_value(false); // false to not restart
+				break;
+			}
 
         try {
             // This is just dummy code for testing.
@@ -202,6 +204,7 @@ void do_run(std::weak_ptr<caspar::IO::protocol_strategy<wchar_t>> amcp,
             strong->parse(wcmd);
         else
             break;
+		}
     }
 };
 

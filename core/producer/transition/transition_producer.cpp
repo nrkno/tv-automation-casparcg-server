@@ -170,7 +170,16 @@ public:
 		const double delta1 = info_.tweener(current_frame_*2-1, 0.0, 1.0, static_cast<double>(info_.duration*2));
 		const double delta2 = info_.tweener(current_frame_*2,   0.0, 1.0, static_cast<double>(info_.duration*2));
 
-		const double dir = info_.direction == transition_direction::from_left ? 1.0 : -1.0;
+		int axis = 0;
+		double dir = 1.0;
+
+		switch (info_.direction) {
+			case transition_direction::from_top:	dir =  1.0; axis = 1; break;
+			case transition_direction::from_bottom:	dir = -1.0; axis = 1; break;
+			case transition_direction::from_left:	dir =  1.0; axis = 0; break;
+			case transition_direction::from_right:	dir = -1.0; axis = 0; break;
+			default:								dir =  1.0; axis = 1; break;
+		}
 
 		// For interlaced transitions. Seperate fields into seperate frames which are transitioned accordingly.
 
@@ -200,21 +209,21 @@ public:
 		}
 		if(info_.type == transition_type::slide)
 		{
-			d_frame1.transform().image_transform.fill_translation[0] = (-1.0+delta1)*dir;
-			d_frame2.transform().image_transform.fill_translation[0] = (-1.0+delta2)*dir;
+			d_frame1.transform().image_transform.fill_translation[axis] = (-1.0+delta1)*dir;
+			d_frame2.transform().image_transform.fill_translation[axis] = (-1.0+delta2)*dir;
 		}
 		else if(info_.type == transition_type::push)
 		{
-			d_frame1.transform().image_transform.fill_translation[0] = (-1.0+delta1)*dir;
-			d_frame2.transform().image_transform.fill_translation[0] = (-1.0+delta2)*dir;
+			d_frame1.transform().image_transform.fill_translation[axis] = (-1.0+delta1)*dir;
+			d_frame2.transform().image_transform.fill_translation[axis] = (-1.0+delta2)*dir;
 
-			s_frame1.transform().image_transform.fill_translation[0] = (0.0+delta1)*dir;
-			s_frame2.transform().image_transform.fill_translation[0] = (0.0+delta2)*dir;
+			s_frame1.transform().image_transform.fill_translation[axis] = (0.0+delta1)*dir;
+			s_frame2.transform().image_transform.fill_translation[axis] = (0.0+delta2)*dir;
 		}
 		else if(info_.type == transition_type::wipe)
 		{
-			d_frame1.transform().image_transform.clip_scale[0] = delta1;
-			d_frame2.transform().image_transform.clip_scale[0] = delta2;
+			d_frame1.transform().image_transform.clip_scale[axis] = delta1;
+			d_frame2.transform().image_transform.clip_scale[axis] = delta2;
 		}
 
 		const auto s_frame = s_frame1.transform() == s_frame2.transform() ? s_frame2 : draw_frame::interlace(s_frame1, s_frame2, mode_);

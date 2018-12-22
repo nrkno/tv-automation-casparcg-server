@@ -319,7 +319,7 @@ void loadbg_describer(core::help_sink& sink, const core::help_repository& reposi
 {
     sink.short_description(L"Load a media file or resource in the background.");
     sink.syntax(
-        LR"(LOADBG [channel:int]{-[layer:int]} [clip:string] {[loop:LOOP]} {[transition:CUT,MIX,PUSH,WIPE,SLIDE] [duration:int] {[tween:string]|linear} {[direction:LEFT,RIGHT]|RIGHT}|CUT 0} {SEEK [frame:int]} {LENGTH [frames:int]} {FILTER [filter:string]} {[auto:AUTO]})");
+        LR"(LOADBG [channel:int]{-[layer:int]} [clip:string] {[loop:LOOP]} {[transition:CUT,MIX,PUSH,WIPE,SLIDE] [duration:int] {[tween:string]|linear} {[direction:LEFT,RIGHT,TOP,BOTTOM]|RIGHT}|CUT 0} {SEEK [frame:int]} {LENGTH [frames:int]} {FILTER [filter:string]} {[auto:AUTO]})");
     sink.para()
         ->text(L"Loads a producer in the background and prepares it for playout. ")
         ->text(L"If no layer is specified the default layer index will be used.");
@@ -344,6 +344,7 @@ void loadbg_describer(core::help_sink& sink, const core::help_repository& reposi
     sink.example(L">> LOADBG 1-1 MY_FILE PUSH 20 easeinesine LOOP SEEK 200 LENGTH 400 AUTO FILTER hflip");
     sink.example(L">> LOADBG 1 MY_FILE PUSH 20 EASEINSINE");
     sink.example(L">> LOADBG 1-1 MY_FILE SLIDE 10 LEFT");
+	sink.example(L">> LOADBG 1-1 MY_FILE PUSH 10 TOP");
     sink.example(L">> LOADBG 1-0 MY_FILE");
     sink.example(L">> PLAY 1-1 MY_FILE\n"
                  L">> LOADBG 1-1 EMPTY MIX 20 AUTO",
@@ -365,7 +366,7 @@ void loadbg_describer(core::help_sink& sink, const core::help_repository& reposi
 bool try_match_transition(const std::wstring& message, transition_info& transitionInfo)
 {
     static const boost::wregex expr(
-        LR"(.*(?<TRANSITION>CUT|PUSH|SLIDE|WIPE|MIX)\s*(?<DURATION>\d+)\s*(?<TWEEN>(LINEAR)|(EASE[^\s]*))?\s*(?<DIRECTION>FROMLEFT|FROMRIGHT|LEFT|RIGHT)?.*)");
+        LR"(.*(?<TRANSITION>CUT|PUSH|SLIDE|WIPE|MIX)\s*(?<DURATION>\d+)\s*(?<TWEEN>(LINEAR)|(EASE[^\s]*))?\s*(?<DIRECTION>FROMLEFT|FROMRIGHT|LEFT|RIGHT|FROMBOTTOM|FROMTOP|BOTTOM|TOP)?.*)");
     boost::wsmatch what;
     if (!boost::regex_match(message, what, expr)) {
         return false;
@@ -396,7 +397,14 @@ bool try_match_transition(const std::wstring& message, transition_info& transiti
         transitionInfo.direction = transition_direction::from_right;
     else if (direction == L"RIGHT")
         transitionInfo.direction = transition_direction::from_left;
-
+	else if (direction == L"FROMTOP")
+		transitionInfo.direction = transition_direction::from_top;
+	else if (direction == L"FROMBOTTOM")
+		transitionInfo.direction = transition_direction::from_bottom;
+	else if (direction == L"TOP")
+		transitionInfo.direction = transition_direction::from_bottom;
+	else if (direction == L"BOTTOM")
+		transitionInfo.direction = transition_direction::from_top;
     return true;
 }
 

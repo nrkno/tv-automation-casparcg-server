@@ -173,7 +173,7 @@ public:
 			diagnostics::call_context::for_thread().layer = render_layer;
 
 			producer = found->producer_factory(dependencies, filename);
-			video_channel->stage()->load(render_layer, producer);
+			video_channel->stage()->load(render_layer, producer, L"");
 			video_channel->stage()->play(render_layer);
 		}
 

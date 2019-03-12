@@ -40,6 +40,7 @@ struct layer::impl
 	spl::shared_ptr<monitor::subject>	monitor_subject_;
 	spl::shared_ptr<frame_producer>		foreground_			= frame_producer::empty();
 	spl::shared_ptr<frame_producer>		background_			= frame_producer::empty();;
+	std::wstring						background_load_tokens_;
 	bool                                auto_play_          = false;
 	bool								is_paused_			= false;
 	int64_t								current_frame_age_	= 0;
@@ -81,10 +82,11 @@ public:
 		is_paused_ = false;
 	}
 
-	void load(spl::shared_ptr<frame_producer> producer, bool preview, bool auto_play)
+	void load(spl::shared_ptr<frame_producer> producer, std::wstring tokens, bool preview, bool auto_play)
 	{
 //		background_->unsubscribe(background_event_subject_);
 		background_ = std::move(producer);
+		background_load_tokens_ = tokens;
 //		background_->subscribe(background_event_subject_);
 
 		auto_play_ = auto_play;
@@ -109,6 +111,7 @@ public:
 
 			set_foreground(background_);
 			background_ = std::move(frame_producer::empty());
+			background_load_tokens_ = L"";
 
 			auto_play_ = false;
 		}
@@ -134,6 +137,7 @@ public:
             {
                 CASPAR_LOG_CURRENT_EXCEPTION();
                 background_ = std::move(frame_producer::empty());
+				background_load_tokens_ = L"";
                 return draw_frame::empty();
             }
         }
@@ -202,6 +206,7 @@ public:
 		info.add(L"frame-age", current_frame_age_);
 		info.add_child(L"foreground.producer", foreground_->info());
 		info.add_child(L"background.producer", background_->info());
+		info.add(L"background.command", background_load_tokens_);
 		return info;
 	}
 
@@ -239,7 +244,7 @@ void layer::swap(layer& other)
 	impl_->update_index(other.impl_->index_);
 	other.impl_->update_index(old_index);
 }
-void layer::load(spl::shared_ptr<frame_producer> frame_producer, bool preview, bool auto_play){return impl_->load(std::move(frame_producer), preview, auto_play);}
+void layer::load(spl::shared_ptr<frame_producer> frame_producer, std::wstring tokens, bool preview, bool auto_play){return impl_->load(std::move(frame_producer), tokens, preview, auto_play);}
 void layer::play(){impl_->play();}
 void layer::pause(){impl_->pause();}
 void layer::resume(){impl_->resume();}
@@ -248,6 +253,7 @@ draw_frame layer::receive(const video_format_desc& format_desc) { return impl_->
 draw_frame layer::receive_background() { return impl_->receive_background(); }
 spl::shared_ptr<frame_producer> layer::foreground() const { return impl_->foreground_;}
 spl::shared_ptr<frame_producer> layer::background() const { return impl_->background_;}
+const std::wstring& layer::background_load_tokens() const { return impl_->background_load_tokens_; }
 bool layer::has_background() const { return impl_->background_ != frame_producer::empty(); }
 boost::property_tree::wptree layer::info() const{return impl_->info();}
 boost::property_tree::wptree layer::delay_info() const{return impl_->delay_info();}

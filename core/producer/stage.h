@@ -68,6 +68,7 @@ class stage_base : public interaction_sink
     virtual std::future<frame_transform> get_current_transform(int index) = 0;
     virtual std::future<void>            load(int                                    index,
                                               const spl::shared_ptr<frame_producer>& producer,
+                                              const std::wstring&                    tokens,
                                               bool                                   preview = false,
                                               bool                                   auto_play = false) = 0;
     virtual std::future<void>            pause(int index)                                                 = 0;
@@ -81,6 +82,7 @@ class stage_base : public interaction_sink
     virtual std::future<void> swap_layer(int index, int other_index, bool swap_transforms)                = 0;
     virtual std::future<void>
     swap_layer(int index, int other_index, const std::shared_ptr<stage_base>& other, bool swap_transforms) = 0;
+	virtual std::wstring background_load_tokens(int index)											   = 0;
 
     // Properties
 
@@ -128,6 +130,7 @@ class stage : public stage_base
     std::future<frame_transform> get_current_transform(int index) override;
     std::future<void>            load(int                                    index,
                                       const spl::shared_ptr<frame_producer>& producer,
+                                      const std::wstring&                    tokens,
                                       bool                                   preview = false,
                                       bool                                   auto_play = false) override;
     std::future<void>            pause(int index) override;
@@ -141,6 +144,7 @@ class stage : public stage_base
     std::future<void>            swap_layer(int index, int other_index, bool swap_transforms) override;
     std::future<void>
     swap_layer(int index, int other_index, const std::shared_ptr<stage_base>& other, bool swap_transforms) override;
+	std::wstring background_load_tokens(int index) override;
 
     void add_layer_consumer(void* token, int layer, frame_consumer_mode mode, const spl::shared_ptr<write_frame_consumer>& layer_consumer);
     void remove_layer_consumer(void* token, int layer);
@@ -205,6 +209,7 @@ class stage_delayed final : public stage_base
     std::future<frame_transform> get_current_transform(int index) override;
     std::future<void>            load(int                                    index,
                                       const spl::shared_ptr<frame_producer>& producer,
+                                      const std::wstring&                    tokens,
                                       bool                                   preview = false,
                                       bool                                   auto_play = false) override;
     std::future<void>            pause(int index) override;
@@ -218,6 +223,7 @@ class stage_delayed final : public stage_base
     std::future<void>            swap_layer(int index, int other_index, bool swap_transforms) override;
     std::future<void>
     swap_layer(int index, int other_index, const std::shared_ptr<stage_base>& other, bool swap_transforms) override;
+	std::wstring background_load_tokens(int index) override;
 
     // interaction_sink
 

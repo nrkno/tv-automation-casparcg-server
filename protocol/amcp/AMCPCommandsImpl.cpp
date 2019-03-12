@@ -467,7 +467,8 @@ std::wstring loadbg_command(command_context& ctx)
         transition_producer = create_transition_producer(channel->video_format_desc().field_mode, pFP, transitionInfo);
     }
 
-    ctx.channel.stage->load(ctx.layer_index(), transition_producer, false, auto_play); // TODO: LOOP
+	auto tokens_str = boost::algorithm::join(ctx.parameters, L" ");
+    ctx.channel.stage->load(ctx.layer_index(), transition_producer, tokens_str, false, auto_play); // TODO: LOOP
 
     return L"202 LOADBG OK\r\n";
 }
@@ -492,7 +493,8 @@ std::wstring load_command(command_context& ctx)
     core::diagnostics::call_context::for_thread().layer         = ctx.layer_index();
     auto pFP = ctx.static_context->producer_registry->create_producer(
         get_producer_dependencies(ctx.channel.raw_channel, ctx), ctx.parameters);
-    ctx.channel.stage->load(ctx.layer_index(), pFP, true);
+	auto tokens_str = boost::algorithm::join(ctx.parameters, L" ");
+    ctx.channel.stage->load(ctx.layer_index(), pFP, tokens_str, true);
 
     return L"202 LOAD OK\r\n";
 }
@@ -518,8 +520,14 @@ void play_describer(core::help_sink& sink, const core::help_repository& reposito
 
 std::wstring play_command(command_context& ctx)
 {
-    if (!ctx.parameters.empty())
-        loadbg_command(ctx);
+	if (!ctx.parameters.empty()) {
+		auto tokens_str = boost::algorithm::join(ctx.parameters, L" ");
+
+		auto current_tokens = ctx.channel.stage->background_load_tokens(ctx.layer_index());
+		if (current_tokens != tokens_str) {
+			loadbg_command(ctx);
+		}
+	}
 
     ctx.channel.stage->play(ctx.layer_index());
 

@@ -55,7 +55,7 @@ public:
 
 	void swap(layer& other);  
 		
-	void load(spl::shared_ptr<frame_producer> producer, bool preview, bool auto_play = false);
+	void load(spl::shared_ptr<frame_producer> producer, std::wstring tokens, bool preview, bool auto_play = false);
 	void play();
 	void pause();
 	void resume();
@@ -77,6 +77,7 @@ public:
 		
 	spl::shared_ptr<frame_producer>	foreground() const; 
 	spl::shared_ptr<frame_producer>	background() const; 
+	const std::wstring& background_load_tokens() const;
         bool has_background() const;
 
 	boost::property_tree::wptree	info() const;

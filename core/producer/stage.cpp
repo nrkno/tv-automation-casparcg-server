@@ -226,10 +226,11 @@ struct stage::impl : public std::enable_shared_from_this<impl>
 
     std::future<void> load(int                                    index,
                            const spl::shared_ptr<frame_producer>& producer,
+						   const std::wstring&                    tokens,
                            bool                                   preview,
                            bool                                   auto_play)
     {
-        return executor_.begin_invoke([=] { get_layer(index).load(producer, preview, auto_play); },
+        return executor_.begin_invoke([=] { get_layer(index).load(producer, tokens, preview, auto_play); },
                                       task_priority::high_priority);
     }
 
@@ -348,6 +349,13 @@ struct stage::impl : public std::enable_shared_from_this<impl>
         return executor_.begin_invoke([=] { other_impl->executor_.invoke(func, task_priority::high_priority); },
                                       task_priority::high_priority);
     }
+
+	std::wstring background_load_tokens(int index)
+	{
+		return executor_.invoke([=] {
+			return get_layer(index).background_load_tokens();
+		});
+	}
 
     void add_layer_consumer(void* token, int layer, frame_consumer_mode mode, const spl::shared_ptr<write_frame_consumer>& layer_consumer)
     {
@@ -475,10 +483,11 @@ std::future<void>            stage::clear_transforms() { return impl_->clear_tra
 std::future<frame_transform> stage::get_current_transform(int index) { return impl_->get_current_transform(index); }
 std::future<void>            stage::load(int                                    index,
                               const spl::shared_ptr<frame_producer>& producer,
+	                          const std::wstring&                    tokens,
                               bool                                   preview,
                               bool                                   auto_play)
 {
-    return impl_->load(index, producer, preview, auto_play);
+    return impl_->load(index, producer, tokens, preview, auto_play);
 }
 std::future<void> stage::pause(int index) { return impl_->pause(index); }
 std::future<void> stage::resume(int index) { return impl_->resume(index); }
@@ -500,6 +509,9 @@ stage::swap_layer(int index, int other_index, const std::shared_ptr<stage_base>&
 {
     const auto other2 = std::static_pointer_cast<stage>(other);
     return impl_->swap_layer(index, other_index, other2, swap_transforms);
+}
+std::wstring stage::background_load_tokens(int index) {
+	return impl_->background_load_tokens(index);
 }
 void stage::add_layer_consumer(void* token, int layer, frame_consumer_mode mode, const spl::shared_ptr<write_frame_consumer>& layer_consumer)
 {
@@ -562,10 +574,11 @@ std::future<frame_transform> stage_delayed::get_current_transform(int index)
 }
 std::future<void> stage_delayed::load(int                                    index,
                                       const spl::shared_ptr<frame_producer>& producer,
+	                                  const std::wstring&                    tokens,
                                       bool                                   preview,
                                       bool                                   auto_play)
 {
-    return executor_.begin_invoke([=]() { return stage_->load(index, producer, preview, auto_play).get(); });
+    return executor_.begin_invoke([=]() { return stage_->load(index, producer, tokens, preview, auto_play).get(); });
 }
 std::future<void> stage_delayed::pause(int index)
 {
@@ -610,6 +623,10 @@ stage_delayed::swap_layer(int index, int other_index, const std::shared_ptr<stag
 
     return executor_.begin_invoke(
         [=]() { return stage_->swap_layer(index, other_index, other2->stage_, swap_transforms).get(); });
+}
+std::wstring stage_delayed::background_load_tokens(int index) {
+	// Note: this must bypass the delay, to avoid blocking any decision making
+	return stage_->background_load_tokens(index);
 }
 
 std::future<std::shared_ptr<frame_producer>> stage_delayed::foreground(int index)

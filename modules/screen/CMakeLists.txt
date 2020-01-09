@@ -22,6 +22,7 @@ include_directories(${TBB_INCLUDE_PATH})
 include_directories(${GLEW_INCLUDE_PATH})
 include_directories(${SFML_INCLUDE_PATH})
 include_directories(${FFMPEG_INCLUDE_PATH})
+include_directories(${POCO_INCLUDE_PATH})
 
 set_target_properties(screen PROPERTIES FOLDER modules)
 source_group(sources\\consumer consumer/*)

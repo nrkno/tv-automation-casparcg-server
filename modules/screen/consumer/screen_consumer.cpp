@@ -62,7 +62,7 @@
 #include <vector>
 
 #if defined(_MSC_VER)
-#include <windows.h>
+// #include <windows.h>
 
 #pragma warning (push)
 #pragma warning (disable : 4244)
@@ -77,6 +77,62 @@ extern "C"
 #if defined(_MSC_VER)
 #pragma warning (pop)
 #endif
+
+#include "Poco/Net/ServerSocket.h"
+#include "Poco/Net/HTTPServer.h"
+#include "Poco/Net/HTTPRequestHandler.h"
+#include "Poco/Net/HTTPRequestHandlerFactory.h"
+#include "Poco/Net/HTTPServerRequest.h"
+#include "Poco/Net/HTTPServerResponse.h"
+// #include "Poco/Util/ServerApplication.h"
+// #include <iostream>
+
+class HelloRequestHandler : public Poco::Net::HTTPRequestHandler
+{
+	void handleRequest(Poco::Net::HTTPServerRequest& request, Poco::Net::HTTPServerResponse& response)
+	{
+		response.setChunkedTransferEncoding(true);
+		response.setContentType("text/html");
+
+		response.send()
+			<< "<html>"
+			<< "<head><title>Hello from CasparCG</title></head>"
+			<< "<body><h1>Hello from the CasparCG embedded web server</h1></body>"
+			<< "</html>";
+	}
+};
+
+class HelloRequestHandlerFactory : public Poco::Net::HTTPRequestHandlerFactory
+{
+	Poco::Net::HTTPRequestHandler* createRequestHandler(const Poco::Net::HTTPServerRequest&)
+	{
+		CASPAR_LOG(warning) << "Creating HelloRequestsHandler";
+		return new HelloRequestHandler;
+	}
+};
+
+/* class WebServerApp : public ServerApplication
+{
+	void initialize(Application& self)
+	{
+		loadConfiguration();
+		ServerApplication::initialize(self);
+	}
+
+	int main(const std::vector<std::string>&)
+	{
+		UInt16 port = static_cast<UInt16>(config().getUInt("port", 8080));
+
+		HTTPServer srv(new HelloRequestHandlerFactory, port);
+		srv.start();
+		logger().information("HTTP Server started on port %hu.", port);
+		waitForTerminationRequest();
+		logger().information("Stopping HTTP Server...");
+		srv.stop();
+
+		return Application::EXIT_OK;
+	}
+}; */
 
 namespace caspar { namespace screen {
 
@@ -310,6 +366,11 @@ public:
 		{
 			init();
 
+			Poco::Net::HTTPServer srv(new HelloRequestHandlerFactory, Poco::Net::ServerSocket(3002), new Poco::Net::HTTPServerParams);
+			srv.start();
+			CASPAR_LOG(info) << print() << " Started HTTP server: port " << srv.port()
+				<< " threads " << srv.currentThreads() << "/" << srv.maxThreads();
+
 			while(is_running_)
 			{
 				try
@@ -393,6 +454,7 @@ public:
 			}
 
 			uninit();
+			srv.stop();
 		}
 		catch(...)
 		{

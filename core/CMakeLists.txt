@@ -159,6 +159,7 @@ include_directories(${TBB_INCLUDE_PATH})
 include_directories(${SFML_INCLUDE_PATH})
 include_directories(${FREETYPE_INCLUDE_PATH})
 include_directories(${GLEW_INCLUDE_PATH})
+include_directories(${POCO_INCLUDE_PATH})
 
 source_group(sources ./*)
 source_group(sources\\consumer consumer/*)

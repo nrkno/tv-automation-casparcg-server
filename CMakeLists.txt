@@ -43,6 +43,7 @@ set(OPENAL_INCLUDE_PATH			"${DEPENDENCIES_FOLDER}/openal/include")
 set(BLUEFISH_INCLUDE_PATH		"${DEPENDENCIES_FOLDER}/bluefish/include")
 set(CEF_INCLUDE_PATH			"${DEPENDENCIES_FOLDER}/cef/${PLATFORM_FOLDER_NAME}/include")
 set(GTEST_INCLUDE_PATH			"${DEPENDENCIES_FOLDER}/gtest/include")
+set(POCO_INCLUDE_PATH           "${DEPENDENCIES_FOLDER}/poco/x64/include")
 
 set(FFMPEG_BIN_PATH				"${DEPENDENCIES_FOLDER}/ffmpeg/win32/bin/")
 set(FREEIMAGE_BIN_PATH			"${DEPENDENCIES_FOLDER}/freeimage/bin/${PLATFORM_FOLDER_NAME}")
@@ -53,6 +54,7 @@ set(LIBERATION_FONTS_BIN_PATH	"${DEPENDENCIES_FOLDER}/liberation-fonts")
 set(CEF_PATH					"${DEPENDENCIES_FOLDER}/cef/${PLATFORM_FOLDER_NAME}")
 set(CEF_BIN_PATH				"${DEPENDENCIES_FOLDER}/cef/${PLATFORM_FOLDER_NAME}/Release")
 set(CEF_RESOURCE_PATH			"${DEPENDENCIES_FOLDER}/cef/${PLATFORM_FOLDER_NAME}/Resources")
+set(POCO_BIN_PATH               "${DEPENDENCIES_FOLDER}/poco/x64/bin")
 
 link_directories("${DEPENDENCIES_FOLDER}/boost/stage/lib/${PLATFORM_FOLDER_NAME}")
 link_directories("${DEPENDENCIES_FOLDER}/tbb/lib/${PLATFORM_FOLDER_NAME}")
@@ -68,6 +70,7 @@ link_directories("${DEPENDENCIES_FOLDER}/bluefish/lib")
 link_directories("${DEPENDENCIES_FOLDER}/zlib/lib")
 link_directories("${DEPENDENCIES_FOLDER}/gtest/lib/${PLATFORM_FOLDER_NAME}")
 link_directories("${CEF_BIN_PATH}")
+link_directories("${DEPENDENCIES_FOLDER}/poco/x64/lib")
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 

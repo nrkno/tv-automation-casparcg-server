@@ -47,6 +47,7 @@
 #include <boost/property_tree/ptree.hpp>
 #include <boost/thread.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/locale/encoding_utf.hpp>
 
 #include <tbb/concurrent_queue.h>
 
@@ -121,6 +122,11 @@ class HelloRequestHandlerFactory : public Poco::Net::HTTPRequestHandlerFactory
 		return Application::EXIT_OK;
 	}
 }; */
+
+std::string wstring_to_utf8(const std::wstring& str)
+{
+	return boost::locale::conv::utf_to_utf<char>(str.c_str(), str.c_str() + str.size());
+}
 
 namespace caspar { namespace poco {
 
@@ -291,7 +297,7 @@ public:
 
 	void render(const uint8_t* data)
 	{
-		Poco::Net::HTTPClientSession s("192.168.178.50", 3000);
+		Poco::Net::HTTPClientSession s(wstring_to_utf8(config_.URI), (Poco::UInt16) config_.port);
 		s.setKeepAlive(true);
 
 		Poco::Net::HTTPRequest req(Poco::Net::HTTPRequest::HTTP_POST, "/fred.jpg", Poco::Net::HTTPMessage::HTTP_1_1);
@@ -422,11 +428,11 @@ void describe_consumer(core::help_sink& sink, const core::help_repository& repo)
 			L"{[push:PUSH]} ");
 	sink.para()->text(L"Sends or serves the raw video contents of a channel using HTTP.");
 	sink.definitions()
-		->item(L"uri", L"HTTP address to PUSH content from or local path to serve stream from.")
+		->item(L"uri", L"Address to PUSH content from or local path to serve stream from (will be full URI in future).")
 		->item(L"port", L"Port to POST to or serve the stream from.")
 		->item(L"push", L"Push the stream using HTTP POST rather than serving the stream for pulling.");
 	sink.para()->text(L"Examples:");
-	sink.example(L">> ADD 1 POCO http://otherserver.com/ PUSH", L"push the stream to otherserver.com on port 80");
+	sink.example(L">> ADD 1 POCO otherserver.com PUSH", L"push the stream to otherserver.com on port 80");
 	sink.example(L">> ADD 1 POCO casparc1/video PORT 3002", L"serve the stream at http://localhost:3002/casparc1/video");
 }
 
@@ -441,7 +447,7 @@ spl::shared_ptr<core::frame_consumer> create_consumer(
 	if (params.size() > 1)
 		config.URI = params.at(1);
 
-	config.push =  !contains_param(L"PUSH", params);
+	config.push =  contains_param(L"PUSH", params);
 
 	if (contains_param(L"PORT", params))
 		config.port = boost::lexical_cast<int>(get_param(L"PORT", params));

@@ -17,6 +17,7 @@ add_subdirectory(psd)
 if (MSVC)
 	add_subdirectory(flash)
 	add_subdirectory(newtek)
+	add_subdirectory(poco)
 endif ()
 
 add_subdirectory(image)

@@ -33,6 +33,7 @@ spl::shared_ptr<core::frame_producer> create_layer_producer(
 		int layer,
                 core::frame_consumer_mode mode,
 		int frames_delay,
-		const core::video_format_desc& destination_mode);
+		const core::video_format_desc& destination_mode,
+	boost::optional<core::audio_channel_layout> channel_layout);
 
 }}

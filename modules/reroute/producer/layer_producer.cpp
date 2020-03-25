@@ -160,6 +160,7 @@ struct remapper_visitor : public core::frame_visitor
 			frame.accept(*this);
 
 		const std::vector<core::draw_frame> res = std::move(frames_stack.top().second);
+		// TODO - ensure that frames_stack was 'empty'
 
 		// Reset ready for next iteration
 		remappers = new_remappers;
@@ -176,6 +177,7 @@ struct remapper_visitor : public core::frame_visitor
 	void visit(const core::const_frame& frame) override
 	{
 		auto audio_buffer = frame.audio_data();
+		auto stream_tag = frame.stream_tag();
 		auto channel_layout = frame.audio_channel_layout();
 		if (output_layout && *output_layout != frame.audio_channel_layout() && audio_buffer.size() > 0) {
 			auto remapper = remappers.find(frame.stream_tag());
@@ -188,11 +190,13 @@ struct remapper_visitor : public core::frame_visitor
 			new_remappers.emplace(frame.stream_tag(), remapper2);
 			audio_buffer = remapper2->mix_and_rearrange(frame.audio_data());
 			channel_layout = *output_layout;
+			stream_tag = remapper2.get();
+		}
+		else {
+			// TODO - stream_tag should be changed to something..
 		}
 
-		//const auto new_tag = std::make_shared<std::pair<void*, void*>>(frame.stream_tag(), this);
-		inner_frame = frame.with_audio(audio_buffer, frame.stream_tag(), channel_layout); // TODO - new tag
-		//inner_frame = frame;
+		inner_frame = frame.with_audio(audio_buffer, stream_tag, channel_layout);
 	}
 
 	void pop() override
@@ -212,11 +216,6 @@ struct remapper_visitor : public core::frame_visitor
 			frames_stack.top().second.push_back(new_frame);
 		}
 	}
-
-	std::vector<core::draw_frame> result() {
-		// TODO - ensure that frames_stack and transform_stack are empty
-		return frames_stack.top().second;
-	}
 };
 
 class layer_producer : public core::frame_producer_base
@@ -235,7 +234,6 @@ class layer_producer : public core::frame_producer_base
 	tbb::atomic<bool>							double_framerate_;
 	std::queue<core::draw_frame>				frame_buffer_;
 
-	//boost::optional<core::audio_channel_layout> remap_to_audio_layout_;
 	std::unique_ptr<remapper_visitor>			audio_remapper_;
 
 public:
@@ -268,6 +266,14 @@ public:
 
 	core::draw_frame receive_impl() override
 	{
+		std::wstring channel_layout_name = L"";
+		if (audio_remapper_->output_layout) {
+			channel_layout_name = (*audio_remapper_->output_layout).name;
+		}
+
+		monitor_subject_ << core::monitor::message("/producer/type") % std::wstring(L"layer-producer")
+			<< core::monitor::message("/producer/channel_layout") % channel_layout_name;
+
 		if (!frame_buffer_.empty())
 		{
 			last_frame_ = frame_buffer_.front();

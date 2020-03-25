@@ -230,6 +230,7 @@ class layer_producer : public core::frame_producer_base
 
 	const std::weak_ptr<core::video_channel>	channel_;
 	core::constraints							pixel_constraints_;
+	const std::wstring							route_source_;
 
 	tbb::atomic<bool>							double_framerate_;
 	std::queue<core::draw_frame>				frame_buffer_;
@@ -241,6 +242,7 @@ public:
 		: layer_(layer)
 		, consumer_(spl::make_shared<layer_consumer>(frames_delay))
 		, channel_(channel)
+		, route_source_(boost::lexical_cast<std::wstring>(channel->index()) + L"-" + boost::lexical_cast<std::wstring>(layer))
 		, last_frame_(core::draw_frame::late())
 		, audio_remapper_(std::make_unique<remapper_visitor>(remap_to_audio_layout))
 	{
@@ -272,7 +274,8 @@ public:
 		}
 
 		monitor_subject_ << core::monitor::message("/producer/type") % std::wstring(L"layer-producer")
-			<< core::monitor::message("/producer/channel_layout") % channel_layout_name;
+			<< core::monitor::message("/producer/channel_layout") % channel_layout_name
+			<< core::monitor::message("/file/path") % route_source_;
 
 		if (!frame_buffer_.empty())
 		{
@@ -312,7 +315,7 @@ public:
 
 	std::wstring print() const override
 	{
-		return L"layer-producer[" + boost::lexical_cast<std::wstring>(layer_) + L"]";
+		return L"layer-producer[" + route_source_ + L"]";
 	}
 
 	std::wstring name() const override

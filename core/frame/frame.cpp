@@ -114,7 +114,7 @@ struct const_frame::impl : boost::noncopyable
 	mutable std::vector<std::shared_future<array<const std::uint8_t>>>	future_buffers_;
 	mutable core::audio_buffer											audio_data_;
 	const core::pixel_format_desc										desc_;
-	const core::audio_channel_layout									channel_layout_;
+	core::audio_channel_layout											channel_layout_;
 	const void*															tag_;
 	core::frame_geometry												geometry_;
 	caspar::timer														since_created_timer_;
@@ -295,6 +295,18 @@ const_frame const_frame::key_only() const
 	result.impl_	= impl_->key_only();
 
 	return result;
+}
+const_frame const_frame::with_audio(const core::audio_buffer& audio_data,
+	const void* tag,
+	const core::audio_channel_layout& channel_layout) const {
+	
+	const_frame copy(*impl_);
+
+	copy.impl_->audio_data_ = audio_data;
+	copy.impl_->channel_layout_ = channel_layout;
+	copy.impl_->tag_ = tag;
+
+	return copy;
 }
 
 }}

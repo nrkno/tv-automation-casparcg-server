@@ -27,6 +27,7 @@
 
 #include <common/param.h>
 
+#include <core/frame/audio_channel_layout.h>
 #include <core/consumer/write_frame_consumer.h>
 #include <core/producer/frame_producer.h>
 #include <core/video_channel.h>
@@ -111,7 +112,19 @@ spl::shared_ptr<core::frame_producer> create_producer(
                 else if (contains_param(L"NEXT", params))
                     mode = core::frame_consumer_mode::next_producer;
 
-		return create_layer_producer(*found_channel, layer, mode, frames_delay, dependencies.format_desc);
+				auto channel_layout_spec = get_param(L"CHANNEL_LAYOUT", params);
+				boost::optional<core::audio_channel_layout> channel_layout;
+
+				if (!channel_layout_spec.empty()) {
+					auto found_layout = core::audio_channel_layout_repository::get_default()->get_layout(channel_layout_spec);
+
+					if (!found_layout)
+						CASPAR_THROW_EXCEPTION(user_error() << msg_info(L"Channel layout not found."));
+
+					channel_layout = found_layout;
+				}
+
+		return create_layer_producer(*found_channel, layer, mode, frames_delay, dependencies.format_desc, channel_layout);
 	}
 	else
 	{

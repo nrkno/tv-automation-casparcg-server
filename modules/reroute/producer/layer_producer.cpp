@@ -26,6 +26,7 @@
 #include <core/consumer/write_frame_consumer.h>
 #include <core/consumer/output.h>
 #include <core/video_channel.h>
+#include <core/frame/audio_channel_layout.h>
 #include <core/frame/draw_frame.h>
 #include <core/frame/frame_factory.h>
 #include <core/producer/frame_producer.h>
@@ -38,6 +39,7 @@
 #include <boost/format.hpp>
 
 #include <tbb/concurrent_queue.h>
+#include <stack>
 
 namespace caspar { namespace reroute {
 
@@ -136,6 +138,86 @@ std::vector<core::draw_frame> extract_actual_frames(core::draw_frame original, c
 		return { std::move(original) };
 }
 
+struct remapper_visitor : public core::frame_visitor
+{
+	const boost::optional<core::audio_channel_layout> output_layout;
+	std::stack<std::pair<core::frame_transform, std::vector<core::draw_frame>>> frames_stack;
+	boost::optional<core::const_frame> inner_frame;
+
+	std::map<const void*, std::shared_ptr<core::audio_channel_remapper>> remappers;
+	std::map<const void*, std::shared_ptr<core::audio_channel_remapper>> new_remappers;
+
+	remapper_visitor(const boost::optional<core::audio_channel_layout>& output_layout)
+		: output_layout(output_layout)
+	{
+		frames_stack.emplace(core::frame_transform{}, std::vector<core::draw_frame>());
+	}
+
+	std::vector<core::draw_frame> process(const std::vector<core::draw_frame>& frames) {
+		new_remappers = std::map<const void*, std::shared_ptr<core::audio_channel_remapper>>();
+
+		for each (auto frame in frames)
+			frame.accept(*this);
+
+		const std::vector<core::draw_frame> res = std::move(frames_stack.top().second);
+		// TODO - ensure that frames_stack was 'empty'
+
+		// Reset ready for next iteration
+		remappers = new_remappers;
+		frames_stack = std::stack<std::pair<core::frame_transform, std::vector<core::draw_frame>>>();
+		frames_stack.emplace(core::frame_transform{}, std::vector<core::draw_frame>());
+		return res;
+	}
+
+	void push(const core::frame_transform& transform) override
+	{
+		frames_stack.emplace(transform, std::vector<core::draw_frame>());
+	}
+
+	void visit(const core::const_frame& frame) override
+	{
+		auto audio_buffer = frame.audio_data();
+		auto stream_tag = frame.stream_tag();
+		auto channel_layout = frame.audio_channel_layout();
+		if (output_layout && *output_layout != frame.audio_channel_layout() && audio_buffer.size() > 0) {
+			auto remapper = remappers.find(frame.stream_tag());
+			std::shared_ptr<core::audio_channel_remapper> remapper2;
+			if (remapper != remappers.end()) {
+				remapper2 = std::move(remapper->second);
+			} else {
+				remapper2.reset(new core::audio_channel_remapper(frame.audio_channel_layout(), *output_layout));
+			}
+			new_remappers.emplace(frame.stream_tag(), remapper2);
+			audio_buffer = remapper2->mix_and_rearrange(frame.audio_data());
+			channel_layout = *output_layout;
+			stream_tag = remapper2.get();
+		}
+		else {
+			// TODO - stream_tag should be changed to something..
+		}
+
+		inner_frame = frame.with_audio(audio_buffer, stream_tag, channel_layout);
+	}
+
+	void pop() override
+	{
+		auto popped = frames_stack.top();
+		frames_stack.pop();
+
+		if (inner_frame != boost::none) {
+			auto new_frame = core::draw_frame(std::move(*inner_frame));
+			inner_frame = boost::none;
+			new_frame.transform() = popped.first;
+			frames_stack.top().second.push_back(std::move(new_frame));
+		}
+		else {
+			auto new_frame = core::draw_frame(std::move(popped.second));
+			new_frame.transform() = popped.first;
+			frames_stack.top().second.push_back(new_frame);
+		}
+	}
+};
+
 class layer_producer : public core::frame_producer_base
 {
 	core::monitor::subject						monitor_subject_;
@@ -148,16 +230,21 @@ class layer_producer : public core::frame_producer_base
 
 	const std::weak_ptr<core::video_channel>	channel_;
 	core::constraints							pixel_constraints_;
+	const std::wstring							route_source_;
 
 	tbb::atomic<bool>							double_framerate_;
 	std::queue<core::draw_frame>				frame_buffer_;
 
+	std::unique_ptr<remapper_visitor>			audio_remapper_;
+
 public:
-	explicit layer_producer(const spl::shared_ptr<core::video_channel>& channel, int layer, core::frame_consumer_mode mode, int frames_delay)
+	explicit layer_producer(const spl::shared_ptr<core::video_channel>& channel, int layer, core::frame_consumer_mode mode, int frames_delay, boost::optional<core::audio_channel_layout> remap_to_audio_layout)
 		: layer_(layer)
 		, consumer_(spl::make_shared<layer_consumer>(frames_delay))
 		, channel_(channel)
+		, route_source_(boost::lexical_cast<std::wstring>(channel->index()) + L"-" + boost::lexical_cast<std::wstring>(layer))
 		, last_frame_(core::draw_frame::late())
+		, audio_remapper_(std::make_unique<remapper_visitor>(remap_to_audio_layout))
 	{
 		pixel_constraints_.width.set(channel->video_format_desc().width);
 		pixel_constraints_.height.set(channel->video_format_desc().height);
@@ -181,6 +268,15 @@ public:
 
 	core::draw_frame receive_impl() override
 	{
+		std::wstring channel_layout_name = L"";
+		if (audio_remapper_->output_layout) {
+			channel_layout_name = (*audio_remapper_->output_layout).name;
+		}
+
+		monitor_subject_ << core::monitor::message("/producer/type") % std::wstring(L"layer-producer")
+			<< core::monitor::message("/producer/channel_layout") % channel_layout_name
+			<< core::monitor::message("/file/path") % route_source_;
+
 		if (!frame_buffer_.empty())
 		{
 			last_frame_ = frame_buffer_.front();
@@ -200,6 +296,8 @@ public:
 		auto actual_frames = extract_actual_frames(std::move(consumer_frame), channel->video_format_desc().field_mode);
 		double_framerate_ = actual_frames.size() == 2;
 
+		actual_frames = audio_remapper_->process(actual_frames);
+
 		for (auto& frame : actual_frames)
 			frame_buffer_.push(std::move(frame));
 
@@ -217,7 +315,7 @@ public:
 
 	std::wstring print() const override
 	{
-		return L"layer-producer[" + boost::lexical_cast<std::wstring>(layer_) + L"]";
+		return L"layer-producer[" + route_source_ + L"]";
 	}
 
 	std::wstring name() const override
@@ -262,9 +360,10 @@ spl::shared_ptr<core::frame_producer> create_layer_producer(
 		int layer,
                 core::frame_consumer_mode mode,
 		int frames_delay,
-		const core::video_format_desc& destination_mode)
+		const core::video_format_desc& destination_mode,
+		boost::optional<core::audio_channel_layout> channel_layout)
 {
-	auto producer = spl::make_shared<layer_producer>(channel, layer, mode, frames_delay);
+	auto producer = spl::make_shared<layer_producer>(channel, layer, mode, frames_delay, channel_layout);
 
 	return producer;
 }

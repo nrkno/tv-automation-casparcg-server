@@ -127,6 +127,10 @@ public:
 	const_frame with_geometry(const frame_geometry& g) const;
 	int64_t get_age_millis() const;
 
+	const_frame with_audio(const core::audio_buffer& audio_data,
+		const void* tag,
+		const core::audio_channel_layout& channel_layout) const;
+
 	bool operator==(const const_frame& other);
 	bool operator!=(const const_frame& other);
 	bool operator<(const const_frame& other);

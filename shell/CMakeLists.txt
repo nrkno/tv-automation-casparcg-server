@@ -24,6 +24,7 @@ set(SOURCES
 		main.cpp
 		server.cpp
 		stdafx.cpp
+		casparcg.manifest
 )
 set(HEADERS
 		default_audio_config.h

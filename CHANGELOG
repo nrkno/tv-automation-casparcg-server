@@ -1,5 +1,10 @@
 C H A N G E S
 
+CasparCG 2.1.12 NRK (w.r.t 2.1.11 NRK)
+==========================================
+
+  o Fix for flash player urls after EOL. More details: #47
+
 CasparCG 2.1.11 NRK (w.r.t 2.1.10 NRK)
 ==========================================
 

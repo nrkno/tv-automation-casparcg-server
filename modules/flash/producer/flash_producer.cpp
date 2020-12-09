@@ -21,6 +21,10 @@
 
 #include "../stdafx.h"
 
+#include "WinInet.h"
+#include "shlwapi.h"
+#include "winerror.h"
+
 #if defined(_MSC_VER)
 #pragma warning (disable : 4146)
 #pragma warning (disable : 4244)
@@ -46,6 +50,7 @@
 #include <common/env.h>
 #include <common/executor.h>
 #include <common/lock.h>
+#include <common/scope_exit.h>
 #include <common/diagnostics/graph.h>
 #include <common/prec_timer.h>
 #include <common/array.h>
@@ -160,6 +165,19 @@ boost::mutex& get_global_init_destruct_mutex()
 	static boost::mutex m;
 
 	return m;
+}
+
+std::wstring url_from_path(std::wstring in)
+{
+    DWORD        out_length = INTERNET_MAX_URL_LENGTH * 2;
+    PWSTR        out_buf = (PWSTR)malloc(out_length + 4);
+    CASPAR_SCOPE_EXIT { free(out_buf); };
+	HRESULT      ret = UrlCreateFromPathW(in.c_str(), out_buf, &out_length, NULL);
+	if (SUCCEEDED(ret)) {
+        return std::wstring(out_buf);
+    } else {
+		return in;
+	}
 }
 
 class flash_renderer
@@ -621,12 +639,13 @@ spl::shared_ptr<core::frame_producer> create_producer(const core::frame_producer
 {
 	auto template_host = get_template_host(dependencies.format_desc);
 	
-	auto filename = env::template_folder() + L"\\" + template_host.filename;
+	auto filename = env::template_folder() + template_host.filename;
 	
 	if(!boost::filesystem::exists(filename))
 		CASPAR_THROW_EXCEPTION(file_not_found() << msg_info(L"Could not open flash movie " + filename));	
 
-	return create_destroy_proxy(spl::make_shared<flash_producer>(dependencies.frame_factory, dependencies.format_desc, filename, template_host.width, template_host.height));
+	const auto url = url_from_path(filename);
+	return create_destroy_proxy(spl::make_shared<flash_producer>(dependencies.frame_factory, dependencies.format_desc, url, template_host.width, template_host.height));
 }
 
 void describe_swf_producer(core::help_sink& sink, const core::help_repository& repo)
@@ -640,15 +659,16 @@ void describe_swf_producer(core::help_sink& sink, const core::help_repository& r
 
 spl::shared_ptr<core::frame_producer> create_swf_producer(const core::frame_producer_dependencies& dependencies, const std::vector<std::wstring>& params)
 {
-	auto filename = env::media_folder() + L"\\" + params.at(0) + L".swf";
+	auto filename = env::media_folder() + params.at(0) + L".swf";
 
 	if (!boost::filesystem::exists(filename))
 		return core::frame_producer::empty();
 
 	swf_t::header_t header(filename);
 
+    const auto url = url_from_path(filename);
 	auto producer = spl::make_shared<flash_producer>(
-			dependencies.frame_factory, dependencies.format_desc, filename, header.frame_width, header.frame_height);
+			dependencies.frame_factory, dependencies.format_desc, url, header.frame_width, header.frame_height);
 
 	producer->call({ L"start_rendering" }).get();
 
@@ -658,13 +678,13 @@ spl::shared_ptr<core::frame_producer> create_swf_producer(const core::frame_prod
 std::wstring find_template(const std::wstring& template_name)
 {
 	if(boost::filesystem::exists(template_name + L".ft")) 
-		return template_name + L".ft";
+		return url_from_path(template_name + L".ft");
 	
 	if(boost::filesystem::exists(template_name + L".ct"))
-		return template_name + L".ct";
+		return url_from_path(template_name + L".ct");
 	
 	if(boost::filesystem::exists(template_name + L".swf"))
-		return template_name + L".swf";
+		return url_from_path(template_name + L".swf");
 
 	return L"";
 }

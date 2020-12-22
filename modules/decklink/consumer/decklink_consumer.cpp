@@ -196,7 +196,7 @@ class decklink_timecode : public IDeckLinkTimecode
         return S_OK;
     }
 
-    HRESULT GetString(BSTR* timecode) override { return S_FALSE; }
+    HRESULT GetString(const char** timecode) override { return S_FALSE; }
 
     BMDTimecodeFlags GetFlags() override { return flags_; }
 
@@ -306,12 +306,12 @@ class decklink_frame : public IDeckLinkVideoFrame
 
         if (format == bmdTimecodeRP188VITC2 || format == bmdTimecodeVITCField2) {
             *timecode = new decklink_timecode(timecode_, bmdTimecodeFlagDefault | bmdTimecodeFieldMark);
-			(*timecode)->AddRef();
+            (*timecode)->AddRef();
             return S_OK;
         }
 
         *timecode = new decklink_timecode(timecode_, bmdTimecodeFlagDefault);
-		(*timecode)->AddRef();
+        (*timecode)->AddRef();
         return S_OK;
     }
 

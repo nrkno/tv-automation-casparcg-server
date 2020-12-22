@@ -583,7 +583,7 @@ struct decklink_consumer
 
             if (result == bmdOutputFrameDisplayedLate) {
                 std::wstring str = print() + L" late scheduled=" + boost::lexical_cast<std::wstring>(video_scheduled_) + L"*";
-                long long timestamp = 0;
+                BMDTimeValue timestamp = 0;
                 double speed = 0;
                 if (SUCCEEDED(output_->GetScheduledStreamTime(format_desc_.time_scale, &timestamp, &speed))) {
                     str += L" decklink=" + boost::lexical_cast<std::wstring>(timestamp);
@@ -595,7 +595,7 @@ struct decklink_consumer
                 audio_scheduled_ += dframe->audio_data().size() / in_channel_layout_.num_channels;
             } else if (result == bmdOutputFrameDropped) {
                 std::wstring str = print() + L" dropped scheduled=" + boost::lexical_cast<std::wstring>(video_scheduled_) + L"*";
-                long long timestamp = 0;
+                BMDTimeValue timestamp = 0;
                 double speed = 0;
                 if (SUCCEEDED(output_->GetScheduledStreamTime(format_desc_.time_scale, &timestamp, &speed))) {
                     str += L" decklink=" + boost::lexical_cast<std::wstring>(timestamp);

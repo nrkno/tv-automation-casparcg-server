@@ -16,7 +16,7 @@ public:
 	accelerator(const std::wstring& path, const core::video_format_repository format_repository);
 	~accelerator();
 
-	std::unique_ptr<core::image_mixer> create_image_mixer(int channel_id);
+	spl::unique_ptr<core::image_mixer> create_image_mixer(int channel_id);
 
 	std::shared_ptr<ogl::device> get_ogl_device() const;
 private:

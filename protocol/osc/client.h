@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include <boost/asio/io_service.hpp>
 #include <boost/asio/ip/udp.hpp>
 #include <boost/noncopyable.hpp>
 
@@ -32,43 +33,43 @@ namespace caspar { namespace protocol { namespace osc {
 
 class client
 {
-	client(const client&);
-	client& operator=(const client&);
-public:	
+    client(const client&);
+    client& operator=(const client&);
+public:
 
-	// Static Members
+    // Static Members
 
-	// Constructors
+    // Constructors
 
-	client(std::shared_ptr<boost::asio::io_service> service);
-	
-	client(client&&);
+    client(std::shared_ptr<boost::asio::io_service> service);
 
-	/**
-	 * Get a subscription token that ensures that OSC messages are sent to the
-	 * given endpoint as long as the token is alive. It will stop sending when
-	 * the token is dropped unless another token to the same endpoint has
-	 * previously been checked out.
-	 *
-	 * @param endpoint The UDP endpoint to send OSC messages to.
-	 *
-	 * @return The token. It is ok for the token to outlive the client
-	 */
-	std::shared_ptr<void> get_subscription_token(
-			const boost::asio::ip::udp::endpoint& endpoint);
+    client(client&&);
 
-	~client();
+    /**
+     * Get a subscription token that ensures that OSC messages are sent to the
+     * given endpoint as long as the token is alive. It will stop sending when
+     * the token is dropped unless another token to the same endpoint has
+     * previously been checked out.
+     *
+     * @param endpoint The UDP endpoint to send OSC messages to.
+     *
+     * @return The token. It is ok for the token to outlive the client
+     */
+    std::shared_ptr<void> get_subscription_token(
+            const boost::asio::ip::udp::endpoint& endpoint);
 
-	// Methods
-		
-	client& operator=(client&&);
-	
-	// Properties
+    ~client();
 
-	spl::shared_ptr<core::monitor::sink> sink();
+    // Methods
+
+    client& operator=(client&&);
+
+    // Properties
+
+    spl::shared_ptr<core::monitor::sink> sink();
 private:
-	struct impl;
-	spl::shared_ptr<impl> impl_;
+    struct impl;
+    spl::shared_ptr<impl> impl_;
 };
 
 }}}

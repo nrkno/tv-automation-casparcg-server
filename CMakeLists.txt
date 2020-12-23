@@ -33,14 +33,7 @@ if (MSVC)
 else ()
 	set(Boost_USE_STATIC_LIBS ON)
 	find_package(Boost 1.71 REQUIRED COMPONENTS
-		chrono
-		date_time
-		filesystem
-		locale
-		log
-		regex
-		system
-		thread
+		chrono date_time filesystem locale log regex system thread
 	)
 	set(BOOST_INCLUDE_PATH		${Boost_INCLUDE_DIRS})
 
@@ -59,14 +52,7 @@ else ()
 	set(FREETYPE_INCLUDE_PATH	${FREETYPE_INCLUDE_DIRS})
 
 	pkg_check_modules(FFMPEG REQUIRED
-		libavcodec
-		libavdevice
-		libavfilter
-		libavformat
-		libavutil
-		libpostproc
-		libswresample
-		libswscale
+		libavcodec libavdevice libavfilter libavformat libavutil libpostproc libswresample libswscale
 	)
 	set(FFMPEG_INCLUDE_PATH		${FFMPEG_INCLUDE_DIRS})
 

@@ -19,17 +19,49 @@ configure_file("${PROJECT_SOURCE_DIR}/version.tmpl" "${PROJECT_SOURCE_DIR}/versi
 
 set(DEPENDENCIES_FOLDER			"${PROJECT_SOURCE_DIR}/dependencies64")
 
-set(BOOST_INCLUDE_PATH			"${DEPENDENCIES_FOLDER}/boost")
 set(RXCPP_INCLUDE_PATH			"${DEPENDENCIES_FOLDER}/RxCpp/include")
-set(TBB_INCLUDE_PATH			"${DEPENDENCIES_FOLDER}/tbb/include")
-set(GLEW_INCLUDE_PATH			"${DEPENDENCIES_FOLDER}/glew/include")
-set(SFML_INCLUDE_PATH			"${DEPENDENCIES_FOLDER}/sfml/include")
-set(FREETYPE_INCLUDE_PATH		"${DEPENDENCIES_FOLDER}/freetype/include")
 
 if (MSVC)
+	set(BOOST_INCLUDE_PATH		"${DEPENDENCIES_FOLDER}/boost")
+	set(TBB_INCLUDE_PATH		"${DEPENDENCIES_FOLDER}/tbb/include")
+	set(GLEW_INCLUDE_PATH		"${DEPENDENCIES_FOLDER}/glew/include")
+	set(SFML_INCLUDE_PATH		"${DEPENDENCIES_FOLDER}/sfml/include")
+	set(FREETYPE_INCLUDE_PATH	"${DEPENDENCIES_FOLDER}/freetype/include")
 	set(FFMPEG_INCLUDE_PATH		"${DEPENDENCIES_FOLDER}/ffmpeg/win32/include")
+	set(FREEIMAGE_INCLUDE_PATH	"${DEPENDENCIES_FOLDER}/freeimage/include")
+	set(OPENAL_INCLUDE_PATH		"${DEPENDENCIES_FOLDER}/openal/include")
 else ()
-	set(FFMPEG_INCLUDE_PATH		"${DEPENDENCIES_FOLDER}/ffmpeg/include")
+	set(Boost_USE_STATIC_LIBS ON)
+	find_package(Boost REQUIRED COMPONENTS
+		chrono date_time filesystem locale log regex system thread
+	)
+	set(BOOST_INCLUDE_PATH		${Boost_INCLUDE_DIRS})
+
+	find_package(PkgConfig REQUIRED)
+
+	pkg_check_modules(TBB REQUIRED tbb)
+	set(TBB_INCLUDE_PATH		${TBB_INCLUDE_DIRS})
+
+	pkg_check_modules(GLEW REQUIRED glew)
+	set(GLEW_INCLUDE_PATH		${GLEW_INCLUDE_DIRS})
+
+	pkg_check_modules(SFML REQUIRED sfml-all)
+	set(SFML_INCLUDE_PATH		${SFML_INCLUDE_DIRS})
+
+	pkg_check_modules(FREETYPE REQUIRED freetype2)
+	set(FREETYPE_INCLUDE_PATH	${FREETYPE_INCLUDE_DIRS})
+
+	pkg_check_modules(FFMPEG REQUIRED
+		libavcodec libavdevice libavfilter libavformat libavutil libpostproc libswresample libswscale
+	)
+	set(FFMPEG_INCLUDE_PATH		${FFMPEG_INCLUDE_DIRS})
+
+	set(FREEIMAGE_INCLUDE_PATH	"")
+
+	pkg_check_modules(OPENAL REQUIRED openal)
+	set(OPENAL_INCLUDE_PATH		${OPENAL_INCLUDE_DIRS})
+
+	pkg_check_modules(ICU REQUIRED icu-i18n)
 endif ()
 
 if (MSVC)
@@ -38,8 +70,6 @@ elseif (CMAKE_COMPILER_IS_GNUCXX)
 	set(PLATFORM_FOLDER_NAME	"linux")
 endif ()
 
-set(FREEIMAGE_INCLUDE_PATH		"${DEPENDENCIES_FOLDER}/freeimage/include")
-set(OPENAL_INCLUDE_PATH			"${DEPENDENCIES_FOLDER}/openal/include")
 set(BLUEFISH_INCLUDE_PATH		"${DEPENDENCIES_FOLDER}/bluefish/include")
 set(CEF_INCLUDE_PATH			"${DEPENDENCIES_FOLDER}/cef/${PLATFORM_FOLDER_NAME}/include")
 set(GTEST_INCLUDE_PATH			"${DEPENDENCIES_FOLDER}/gtest/include")
@@ -54,16 +84,20 @@ set(CEF_PATH					"${DEPENDENCIES_FOLDER}/cef/${PLATFORM_FOLDER_NAME}")
 set(CEF_BIN_PATH				"${DEPENDENCIES_FOLDER}/cef/${PLATFORM_FOLDER_NAME}/Release")
 set(CEF_RESOURCE_PATH			"${DEPENDENCIES_FOLDER}/cef/${PLATFORM_FOLDER_NAME}/Resources")
 
-link_directories("${DEPENDENCIES_FOLDER}/boost/stage/lib/${PLATFORM_FOLDER_NAME}")
-link_directories("${DEPENDENCIES_FOLDER}/tbb/lib/${PLATFORM_FOLDER_NAME}")
-link_directories("${DEPENDENCIES_FOLDER}/glew/lib/${PLATFORM_FOLDER_NAME}")
-link_directories("${DEPENDENCIES_FOLDER}/sfml/lib/${PLATFORM_FOLDER_NAME}")
-link_directories("${DEPENDENCIES_FOLDER}/sfml/extlibs/lib")
-link_directories("${DEPENDENCIES_FOLDER}/freetype/objs/win32/vc2010")
-link_directories("${DEPENDENCIES_FOLDER}/ffmpeg/win32/lib")
+if (MSVC)
+	link_directories("${DEPENDENCIES_FOLDER}/boost/stage/lib/${PLATFORM_FOLDER_NAME}")
+	link_directories("${DEPENDENCIES_FOLDER}/tbb/lib/${PLATFORM_FOLDER_NAME}")
+	link_directories("${DEPENDENCIES_FOLDER}/glew/lib/${PLATFORM_FOLDER_NAME}")
+	link_directories("${DEPENDENCIES_FOLDER}/sfml/lib/${PLATFORM_FOLDER_NAME}")
+	link_directories("${DEPENDENCIES_FOLDER}/sfml/extlibs/lib")
+	link_directories("${DEPENDENCIES_FOLDER}/freetype/objs/win32/vc2010")
+	link_directories("${DEPENDENCIES_FOLDER}/ffmpeg/win32/lib")
+	link_directories("${DEPENDENCIES_FOLDER}/freeimage/lib/${PLATFORM_FOLDER_NAME}")
+	link_directories("${DEPENDENCIES_FOLDER}/openal/lib/${PLATFORM_FOLDER_NAME}")
+endif ()
+
 link_directories("${DEPENDENCIES_FOLDER}/asmlib")
-link_directories("${DEPENDENCIES_FOLDER}/freeimage/lib/${PLATFORM_FOLDER_NAME}")
-link_directories("${DEPENDENCIES_FOLDER}/openal/lib/${PLATFORM_FOLDER_NAME}")
+
 link_directories("${DEPENDENCIES_FOLDER}/bluefish/lib")
 link_directories("${DEPENDENCIES_FOLDER}/zlib/lib")
 link_directories("${DEPENDENCIES_FOLDER}/gtest/lib/${PLATFORM_FOLDER_NAME}")
@@ -71,32 +105,31 @@ link_directories("${CEF_BIN_PATH}")
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-add_definitions( -DSFML_STATIC )
-add_definitions( -DBOOST_THREAD_VERSION=4 )
-add_definitions( -DTBB_USE_CAPTURED_EXCEPTION=0 )
-add_definitions( -DUNICODE )
-add_definitions( -D_UNICODE )
-add_definitions( -DGLEW_NO_GLU )
-add_definitions( "-DBOOST_ASIO_ERROR_CATEGORY_NOEXCEPT=noexcept(true)" ) # Workaround macro redefinition in boost
-add_definitions( -D_GLIBCXX_USE_CXX11_ABI=0 ) # Allow compilation in GCC 5 while keeping old dependencies
-add_definitions( -DCASPAR_SOURCE_PREFIX="${CMAKE_CURRENT_SOURCE_DIR}" )
-
 if (MSVC)
 	set(CMAKE_CXX_FLAGS					"${CMAKE_CXX_FLAGS}					/EHa /Zi /W4 /WX /MP /fp:fast /Zm192 /FIcommon/compiler/vs/disable_silly_warnings.h")
 	set(CMAKE_CXX_FLAGS_DEBUG			"${CMAKE_CXX_FLAGS_DEBUG}			/D TBB_USE_ASSERT=1 /D TBB_USE_DEBUG /bigobj")
 	set(CMAKE_CXX_FLAGS_RELEASE			"${CMAKE_CXX_FLAGS_RELEASE}			/Oi /Ot /Gy /bigobj")
 	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO	"${CMAKE_CXX_FLAGS_RELWITHDEBINFO}	/Oi /Ot /Gy /bigobj /Ob2")
+
+	add_definitions( -DSFML_STATIC )
+	add_definitions( -DBOOST_THREAD_VERSION=4 )
+	add_definitions( -DTBB_USE_CAPTURED_EXCEPTION=0 )
+	add_definitions( -DGLEW_NO_GLU )
+	add_definitions( "-DBOOST_ASIO_ERROR_CATEGORY_NOEXCEPT=noexcept(true)" ) # Workaround macro redefinition in boost
+	add_definitions( -D_GLIBCXX_USE_CXX11_ABI=0 ) # Allow compilation in GCC 5 while keeping old dependencies
+
 elseif (CMAKE_COMPILER_IS_GNUCXX)
+	set(CMAKE_CXX_STANDARD 11)
+	set(CMAKE_CXX_STANDARD_REQUIRED ON)
 	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -g")
-	add_compile_options( -std=c++11 )
-	add_compile_options( -msse3 )
-	add_compile_options( -mssse3 )
-	add_compile_options( -msse4.1 )
-	add_compile_options( -pthread )
-	add_compile_options( -fPIC )
+	add_compile_options( -msse3 -mssse3 -msse4.1 )
+	add_compile_options( -fPIC -pthread )
 	add_compile_options( -fnon-call-exceptions ) # Allow signal handler to throw exception
-	add_definitions( -DBOOST_NO_SWPRINTF ) # swprintf on Linux seems to always use , as decimal point regardless of C-locale or C++-locale
 endif ()
+
+add_definitions( -DUNICODE )
+add_definitions( -D_UNICODE )
+add_definitions( -DCASPAR_SOURCE_PREFIX="${CMAKE_CURRENT_SOURCE_DIR}" )
 
 if (POLICY CMP0045)
 	cmake_policy(SET CMP0045 OLD)

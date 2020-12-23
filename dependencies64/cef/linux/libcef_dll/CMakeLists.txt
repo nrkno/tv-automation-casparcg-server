@@ -25,6 +25,12 @@ set(LIBCEF_SRCS
   )
 source_group(libcef_dll FILES ${LIBCEF_SRCS})
 
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+  list(APPEND CEF_CXX_COMPILER_FLAGS
+    -Wno-attributes             # The cfi-icall attribute is not supported by the GNU C++ compiler
+  )
+endif()
+
 set(LIBCEF_BASE_SRCS
   base/cef_atomicops_x86_gcc.cc
   base/cef_bind_helpers.cc

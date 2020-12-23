@@ -50,7 +50,7 @@ class video_channel final
     explicit video_channel(int                          index,
                            const video_format_desc&     format_desc,
                            const audio_channel_layout&  channel_layout,
-                           std::unique_ptr<image_mixer> image_mixer);
+                           spl::unique_ptr<image_mixer> image_mixer);
     ~video_channel();
 
     // Methods

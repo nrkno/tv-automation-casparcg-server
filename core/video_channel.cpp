@@ -94,7 +94,7 @@ struct video_channel::impl final
     impl(int                               index,
          const core::video_format_desc&    format_desc,
          const core::audio_channel_layout& channel_layout,
-         std::unique_ptr<image_mixer>      image_mixer)
+         spl::unique_ptr<image_mixer>      image_mixer)
         : monitor_subject_(spl::make_shared<monitor::subject>("/channel/" + boost::lexical_cast<std::string>(index)))
         , index_(index)
         , format_desc_(format_desc)
@@ -296,7 +296,7 @@ struct video_channel::impl final
 video_channel::video_channel(int                               index,
                              const core::video_format_desc&    format_desc,
                              const core::audio_channel_layout& channel_layout,
-                             std::unique_ptr<image_mixer>      image_mixer)
+                             spl::unique_ptr<image_mixer>      image_mixer)
     : impl_(new impl(index, format_desc, channel_layout, std::move(image_mixer)))
 {
 }

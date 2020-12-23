@@ -32,7 +32,7 @@ if (MSVC)
 	set(OPENAL_INCLUDE_PATH		"${DEPENDENCIES_FOLDER}/openal/include")
 else ()
 	set(Boost_USE_STATIC_LIBS ON)
-	find_package(Boost 1.71 REQUIRED COMPONENTS
+	find_package(Boost REQUIRED COMPONENTS
 		chrono date_time filesystem locale log regex system thread
 	)
 	set(BOOST_INCLUDE_PATH		${Boost_INCLUDE_DIRS})

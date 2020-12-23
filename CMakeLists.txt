@@ -60,6 +60,8 @@ else ()
 
 	pkg_check_modules(OPENAL REQUIRED openal)
 	set(OPENAL_INCLUDE_PATH		${OPENAL_INCLUDE_DIRS})
+
+	pkg_check_modules(ICU REQUIRED icu-i18n)
 endif ()
 
 if (MSVC)
@@ -103,32 +105,31 @@ link_directories("${CEF_BIN_PATH}")
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-add_definitions( -DSFML_STATIC )
-add_definitions( -DBOOST_THREAD_VERSION=4 )
-add_definitions( -DTBB_USE_CAPTURED_EXCEPTION=0 )
-add_definitions( -DUNICODE )
-add_definitions( -D_UNICODE )
-add_definitions( -DGLEW_NO_GLU )
-add_definitions( "-DBOOST_ASIO_ERROR_CATEGORY_NOEXCEPT=noexcept(true)" ) # Workaround macro redefinition in boost
-add_definitions( -D_GLIBCXX_USE_CXX11_ABI=0 ) # Allow compilation in GCC 5 while keeping old dependencies
-add_definitions( -DCASPAR_SOURCE_PREFIX="${CMAKE_CURRENT_SOURCE_DIR}" )
-
 if (MSVC)
 	set(CMAKE_CXX_FLAGS					"${CMAKE_CXX_FLAGS}					/EHa /Zi /W4 /WX /MP /fp:fast /Zm192 /FIcommon/compiler/vs/disable_silly_warnings.h")
 	set(CMAKE_CXX_FLAGS_DEBUG			"${CMAKE_CXX_FLAGS_DEBUG}			/D TBB_USE_ASSERT=1 /D TBB_USE_DEBUG /bigobj")
 	set(CMAKE_CXX_FLAGS_RELEASE			"${CMAKE_CXX_FLAGS_RELEASE}			/Oi /Ot /Gy /bigobj")
 	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO	"${CMAKE_CXX_FLAGS_RELWITHDEBINFO}	/Oi /Ot /Gy /bigobj /Ob2")
+
+	add_definitions( -DSFML_STATIC )
+	add_definitions( -DBOOST_THREAD_VERSION=4 )
+	add_definitions( -DTBB_USE_CAPTURED_EXCEPTION=0 )
+	add_definitions( -DGLEW_NO_GLU )
+	add_definitions( "-DBOOST_ASIO_ERROR_CATEGORY_NOEXCEPT=noexcept(true)" ) # Workaround macro redefinition in boost
+	add_definitions( -D_GLIBCXX_USE_CXX11_ABI=0 ) # Allow compilation in GCC 5 while keeping old dependencies
+
 elseif (CMAKE_COMPILER_IS_GNUCXX)
+	set(CMAKE_CXX_STANDARD 11)
+	set(CMAKE_CXX_STANDARD_REQUIRED ON)
 	set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -g")
-	add_compile_options( -std=c++11 )
-	add_compile_options( -msse3 )
-	add_compile_options( -mssse3 )
-	add_compile_options( -msse4.1 )
-	add_compile_options( -pthread )
-	add_compile_options( -fPIC )
+	add_compile_options( -msse3 -mssse3 -msse4.1 )
+	add_compile_options( -fPIC -pthread )
 	add_compile_options( -fnon-call-exceptions ) # Allow signal handler to throw exception
-	add_definitions( -DBOOST_NO_SWPRINTF ) # swprintf on Linux seems to always use , as decimal point regardless of C-locale or C++-locale
 endif ()
+
+add_definitions( -DUNICODE )
+add_definitions( -D_UNICODE )
+add_definitions( -DCASPAR_SOURCE_PREFIX="${CMAKE_CURRENT_SOURCE_DIR}" )
 
 if (POLICY CMP0045)
 	cmake_policy(SET CMP0045 OLD)

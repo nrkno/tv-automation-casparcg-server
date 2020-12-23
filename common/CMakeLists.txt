@@ -133,8 +133,8 @@ else ()
 		${SFML_LIBRARIES}
 		${GLEW_LIBRARIES}
 		${FREETYPE_LIBRARIES}
-		X11
-		pthread
+		${ICU_LIBRARIES}
+		-lX11
 	)
 endif ()
 

@@ -19,17 +19,61 @@ configure_file("${PROJECT_SOURCE_DIR}/version.tmpl" "${PROJECT_SOURCE_DIR}/versi
 
 set(DEPENDENCIES_FOLDER			"${PROJECT_SOURCE_DIR}/dependencies64")
 
-set(BOOST_INCLUDE_PATH			"${DEPENDENCIES_FOLDER}/boost")
 set(RXCPP_INCLUDE_PATH			"${DEPENDENCIES_FOLDER}/RxCpp/include")
-set(TBB_INCLUDE_PATH			"${DEPENDENCIES_FOLDER}/tbb/include")
-set(GLEW_INCLUDE_PATH			"${DEPENDENCIES_FOLDER}/glew/include")
-set(SFML_INCLUDE_PATH			"${DEPENDENCIES_FOLDER}/sfml/include")
-set(FREETYPE_INCLUDE_PATH		"${DEPENDENCIES_FOLDER}/freetype/include")
 
 if (MSVC)
+	set(BOOST_INCLUDE_PATH		"${DEPENDENCIES_FOLDER}/boost")
+	set(TBB_INCLUDE_PATH		"${DEPENDENCIES_FOLDER}/tbb/include")
+	set(GLEW_INCLUDE_PATH		"${DEPENDENCIES_FOLDER}/glew/include")
+	set(SFML_INCLUDE_PATH		"${DEPENDENCIES_FOLDER}/sfml/include")
+	set(FREETYPE_INCLUDE_PATH	"${DEPENDENCIES_FOLDER}/freetype/include")
 	set(FFMPEG_INCLUDE_PATH		"${DEPENDENCIES_FOLDER}/ffmpeg/win32/include")
+	set(FREEIMAGE_INCLUDE_PATH	"${DEPENDENCIES_FOLDER}/freeimage/include")
+	set(OPENAL_INCLUDE_PATH		"${DEPENDENCIES_FOLDER}/openal/include")
 else ()
-	set(FFMPEG_INCLUDE_PATH		"${DEPENDENCIES_FOLDER}/ffmpeg/include")
+	set(Boost_USE_STATIC_LIBS ON)
+	find_package(Boost 1.71 REQUIRED COMPONENTS
+		chrono
+		date_time
+		filesystem
+		locale
+		log
+		regex
+		system
+		thread
+	)
+	set(BOOST_INCLUDE_PATH		${Boost_INCLUDE_DIRS})
+
+	find_package(PkgConfig REQUIRED)
+
+	pkg_check_modules(TBB REQUIRED tbb)
+	set(TBB_INCLUDE_PATH		${TBB_INCLUDE_DIRS})
+
+	pkg_check_modules(GLEW REQUIRED glew)
+	set(GLEW_INCLUDE_PATH		${GLEW_INCLUDE_DIRS})
+
+	pkg_check_modules(SFML REQUIRED sfml-all)
+	set(SFML_INCLUDE_PATH		${SFML_INCLUDE_DIRS})
+
+	pkg_check_modules(FREETYPE REQUIRED freetype2)
+	set(FREETYPE_INCLUDE_PATH	${FREETYPE_INCLUDE_DIRS})
+
+	pkg_check_modules(FFMPEG REQUIRED
+		libavcodec
+		libavdevice
+		libavfilter
+		libavformat
+		libavutil
+		libpostproc
+		libswresample
+		libswscale
+	)
+	set(FFMPEG_INCLUDE_PATH		${FFMPEG_INCLUDE_DIRS})
+
+	set(FREEIMAGE_INCLUDE_PATH	"")
+
+	pkg_check_modules(OPENAL REQUIRED openal)
+	set(OPENAL_INCLUDE_PATH		${OPENAL_INCLUDE_DIRS})
 endif ()
 
 if (MSVC)
@@ -38,8 +82,6 @@ elseif (CMAKE_COMPILER_IS_GNUCXX)
 	set(PLATFORM_FOLDER_NAME	"linux")
 endif ()
 
-set(FREEIMAGE_INCLUDE_PATH		"${DEPENDENCIES_FOLDER}/freeimage/include")
-set(OPENAL_INCLUDE_PATH			"${DEPENDENCIES_FOLDER}/openal/include")
 set(BLUEFISH_INCLUDE_PATH		"${DEPENDENCIES_FOLDER}/bluefish/include")
 set(CEF_INCLUDE_PATH			"${DEPENDENCIES_FOLDER}/cef/${PLATFORM_FOLDER_NAME}/include")
 set(GTEST_INCLUDE_PATH			"${DEPENDENCIES_FOLDER}/gtest/include")
@@ -54,16 +96,20 @@ set(CEF_PATH					"${DEPENDENCIES_FOLDER}/cef/${PLATFORM_FOLDER_NAME}")
 set(CEF_BIN_PATH				"${DEPENDENCIES_FOLDER}/cef/${PLATFORM_FOLDER_NAME}/Release")
 set(CEF_RESOURCE_PATH			"${DEPENDENCIES_FOLDER}/cef/${PLATFORM_FOLDER_NAME}/Resources")
 
-link_directories("${DEPENDENCIES_FOLDER}/boost/stage/lib/${PLATFORM_FOLDER_NAME}")
-link_directories("${DEPENDENCIES_FOLDER}/tbb/lib/${PLATFORM_FOLDER_NAME}")
-link_directories("${DEPENDENCIES_FOLDER}/glew/lib/${PLATFORM_FOLDER_NAME}")
-link_directories("${DEPENDENCIES_FOLDER}/sfml/lib/${PLATFORM_FOLDER_NAME}")
-link_directories("${DEPENDENCIES_FOLDER}/sfml/extlibs/lib")
-link_directories("${DEPENDENCIES_FOLDER}/freetype/objs/win32/vc2010")
-link_directories("${DEPENDENCIES_FOLDER}/ffmpeg/win32/lib")
+if (MSVC)
+	link_directories("${DEPENDENCIES_FOLDER}/boost/stage/lib/${PLATFORM_FOLDER_NAME}")
+	link_directories("${DEPENDENCIES_FOLDER}/tbb/lib/${PLATFORM_FOLDER_NAME}")
+	link_directories("${DEPENDENCIES_FOLDER}/glew/lib/${PLATFORM_FOLDER_NAME}")
+	link_directories("${DEPENDENCIES_FOLDER}/sfml/lib/${PLATFORM_FOLDER_NAME}")
+	link_directories("${DEPENDENCIES_FOLDER}/sfml/extlibs/lib")
+	link_directories("${DEPENDENCIES_FOLDER}/freetype/objs/win32/vc2010")
+	link_directories("${DEPENDENCIES_FOLDER}/ffmpeg/win32/lib")
+	link_directories("${DEPENDENCIES_FOLDER}/freeimage/lib/${PLATFORM_FOLDER_NAME}")
+	link_directories("${DEPENDENCIES_FOLDER}/openal/lib/${PLATFORM_FOLDER_NAME}")
+endif ()
+
 link_directories("${DEPENDENCIES_FOLDER}/asmlib")
-link_directories("${DEPENDENCIES_FOLDER}/freeimage/lib/${PLATFORM_FOLDER_NAME}")
-link_directories("${DEPENDENCIES_FOLDER}/openal/lib/${PLATFORM_FOLDER_NAME}")
+
 link_directories("${DEPENDENCIES_FOLDER}/bluefish/lib")
 link_directories("${DEPENDENCIES_FOLDER}/zlib/lib")
 link_directories("${DEPENDENCIES_FOLDER}/gtest/lib/${PLATFORM_FOLDER_NAME}")

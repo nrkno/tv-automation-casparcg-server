@@ -224,10 +224,21 @@ public:
 			s_frame2.transform().image_transform.opacity = 1.0-delta2;
 			s_frame2.transform().image_transform.is_mix = true;
 		}
-		if(info_.type == transition_type::slide)
+		else if(info_.type == transition_type::slide)
 		{
 			d_frame1.transform().image_transform.fill_translation[axis] = (-1.0+delta1)*dir;
 			d_frame2.transform().image_transform.fill_translation[axis] = (-1.0+delta2)*dir;
+
+			if (info_.direction == transition_direction::from_left || info_.direction == transition_direction::from_top)
+			{
+				s_frame1.transform().image_transform.clip_translation[axis] = delta1;
+				s_frame2.transform().image_transform.clip_translation[axis] = delta2;
+			}
+			else
+			{
+				s_frame1.transform().image_transform.clip_scale[axis] = (1.0-delta1);
+				s_frame2.transform().image_transform.clip_scale[axis] = (1.0-delta2);
+			}
 		}
 		else if(info_.type == transition_type::push)
 		{
@@ -239,13 +250,21 @@ public:
 		}
 		else if(info_.type == transition_type::wipe)
 		{
-			if (info_.direction == transition_direction::from_right || info_.direction == transition_direction::from_top) {
-			d_frame1.transform().image_transform.clip_scale[axis] = delta1;
-			d_frame2.transform().image_transform.clip_scale[axis] = delta2;
+			if (info_.direction == transition_direction::from_right || info_.direction == transition_direction::from_top)
+			{
+				d_frame1.transform().image_transform.clip_scale[axis] = delta1;
+				d_frame2.transform().image_transform.clip_scale[axis] = delta2;
+
+				s_frame1.transform().image_transform.clip_translation[axis] = delta1;
+				s_frame2.transform().image_transform.clip_translation[axis] = delta2;
 			}
-			else {
-				d_frame1.transform().image_transform.clip_translation[axis] = (1.0 - delta1);
-				d_frame2.transform().image_transform.clip_translation[axis] = (1.0 - delta2);
+			else
+			{
+				d_frame1.transform().image_transform.clip_translation[axis] = (1.0-delta1);
+				d_frame2.transform().image_transform.clip_translation[axis] = (1.0-delta2);
+
+				s_frame1.transform().image_transform.clip_scale[axis] = (1.0-delta1);
+				s_frame2.transform().image_transform.clip_scale[axis] = (1.0-delta2);
 			}
 		}
 

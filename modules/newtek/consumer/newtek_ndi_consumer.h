@@ -16,28 +16,26 @@
  * You should have received a copy of the GNU General Public License
  * along with CasparCG. If not, see <http://www.gnu.org/licenses/>.
  *
- * Author: Robert Nagy, ronag89@gmail.com
+ * Author: Krzysztof Zegzula, zegzulakrzysztof@gmail.com
+ * based on work of Robert Nagy, ronag89@gmail.com work
  */
 
-#ifdef _DEBUG
-#include <crtdbg.h>
-#endif
-
-#define NOMINMAX
-
-#include <algorithm>
-#include <array>
-#include <deque>
-#include <functional>
-#include <math.h>
-#include <memory>
-#include <queue>
-#include <string>
-#include <vector>
+#pragma once
 
 #include <common/memory.h>
 
-#include <common/except.h>
-#include <common/log.h>
+#include <core/fwd.h>
 
-#include <assert.h>
+#include <boost/property_tree/ptree_fwd.hpp>
+
+#include <string>
+
+namespace caspar { namespace newtek {
+
+spl::shared_ptr<core::frame_consumer> create_ndi_consumer(const std::vector<std::wstring>&                  params, core::interaction_sink*,
+                                                          std::vector<spl::shared_ptr<core::video_channel>> channels);
+spl::shared_ptr<core::frame_consumer>
+create_preconfigured_ndi_consumer(const boost::property_tree::wptree&               ptree, core::interaction_sink*,
+                                  std::vector<spl::shared_ptr<core::video_channel>> channels);
+
+}} // namespace caspar::newtek

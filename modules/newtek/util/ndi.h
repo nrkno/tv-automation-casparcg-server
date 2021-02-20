@@ -16,28 +16,22 @@
  * You should have received a copy of the GNU General Public License
  * along with CasparCG. If not, see <http://www.gnu.org/licenses/>.
  *
- * Author: Robert Nagy, ronag89@gmail.com
+ * Author: Krzysztof Zegzula, zegzulakrzysztof@gmail.com
  */
+#pragma once
 
-#ifdef _DEBUG
-#include <crtdbg.h>
-#endif
-
-#define NOMINMAX
-
-#include <algorithm>
-#include <array>
-#include <deque>
-#include <functional>
-#include <math.h>
-#include <memory>
-#include <queue>
+#include "../interop/Processing.NDI.Lib.h"
+#include "protocol/amcp/AMCPCommand.h"
 #include <string>
-#include <vector>
 
-#include <common/memory.h>
+namespace caspar { namespace newtek { namespace ndi {
 
-#include <common/except.h>
-#include <common/log.h>
+const std::wstring&                    dll_name();
+NDIlib_v3*                             load_library();
+std::map<std::string, NDIlib_source_t> get_current_sources();
+void                                   not_initialized();
+void                                   not_installed();
 
-#include <assert.h>
+// std::wstring list_command(protocol::amcp::command_context& ctx);
+
+}}} // namespace caspar::newtek::ndi

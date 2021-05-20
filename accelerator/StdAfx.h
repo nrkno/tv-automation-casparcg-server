@@ -40,7 +40,6 @@
 #include <string>
 #include <vector>
 
-#include <tbb/atomic.h>
 #include <tbb/concurrent_queue.h>
 #include <tbb/concurrent_unordered_map.h>
 

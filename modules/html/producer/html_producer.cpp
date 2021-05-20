@@ -51,7 +51,6 @@
 #include <boost/log/trivial.hpp>
 #include <boost/property_tree/ptree.hpp>
 
-#include <tbb/atomic.h>
 #include <tbb/concurrent_queue.h>
 
 #pragma warning(push)
@@ -94,8 +93,8 @@ class html_client
 	core::video_format_desc					format_desc_;
     bool                                 	shared_texture_enable_;
 	tbb::concurrent_queue<std::wstring>		javascript_before_load_;
-	tbb::atomic<bool>						loaded_;
-	tbb::atomic<bool>						removed_;
+	std::atomic<bool>						loaded_;
+	std::atomic<bool>						removed_;
 	std::queue<core::draw_frame>			frames_;
 	mutable std::mutex						frames_mutex_;
 

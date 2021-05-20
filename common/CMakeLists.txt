@@ -156,8 +156,8 @@ endif ()
 
 if(MSVC)
 	casparcg_add_runtime_dependency("${GLEW_BIN_PATH}/glew32.dll")
-	casparcg_add_runtime_dependency("${TBB_BIN_PATH}/tbb.dll")
-	casparcg_add_runtime_dependency("${TBB_BIN_PATH}/tbb_debug.dll")
+	casparcg_add_runtime_dependency("${TBB_BIN_PATH}/tbb12.dll")
+	casparcg_add_runtime_dependency("${TBB_BIN_PATH}/tbb12_debug.dll")
 
 	# Reenable when tbb gets official support for vc14
 	# casparcg_add_runtime_dependency("${TBB_BIN_PATH}/tbbmalloc.dll")

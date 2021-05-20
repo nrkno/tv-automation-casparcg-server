@@ -30,6 +30,7 @@
 #include <ios>
 #include <iomanip>
 #include <string>
+#include <atomic>
 #include <ostream>
 
 #include <boost/shared_ptr.hpp>
@@ -57,8 +58,6 @@
 #include <boost/lexical_cast.hpp>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/thread/mutex.hpp>
-
-#include <tbb/atomic.h>
 
 namespace caspar { namespace log {
 
@@ -88,7 +87,7 @@ void append_timestamp(Stream& stream, boost::posix_time::ptime timestamp)
 
 class column_writer
 {
-	tbb::atomic<int> column_width_;
+	std::atomic<int> column_width_;
 public:
 	column_writer(int initial_width = 0)
 	{
@@ -101,8 +100,8 @@ public:
 		std::wstring to_string = boost::lexical_cast<std::wstring>(value);
 		int length = static_cast<int>(to_string.size());
 		int read_width;
-
-		while ((read_width = column_width_) < length && column_width_.compare_and_swap(length, read_width) != read_width);
+		
+		while ((read_width = column_width_) < length && !column_width_.compare_exchange_strong(read_width, length));
 		read_width = column_width_;
 
 		out << L"[" << to_string << L"] ";

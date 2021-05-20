@@ -108,7 +108,7 @@ struct oal_consumer : public core::frame_consumer
 
 	spl::shared_ptr<diagnostics::graph>				graph_;
 	boost::timer									perf_timer_;
-	tbb::atomic<int64_t>							presentation_age_;
+	std::atomic<int64_t>							presentation_age_;
 	int												channel_index_		= -1;
 
 	core::video_format_desc							format_desc_;

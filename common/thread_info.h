@@ -27,8 +27,6 @@
 
 #include "memory.h"
 
-#include <tbb/atomic.h>
-
 #include <boost/thread/thread.hpp>
 
 namespace caspar {

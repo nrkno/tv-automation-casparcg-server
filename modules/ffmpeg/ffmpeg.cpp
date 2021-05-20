@@ -41,8 +41,6 @@
 #include <boost/thread/tss.hpp>
 #include <boost/bind.hpp>
 
-#include <tbb/recursive_mutex.h>
-
 #if defined(_MSC_VER)
 #pragma warning (disable : 4244)
 #pragma warning (disable : 4603)
@@ -66,13 +64,13 @@ int ffmpeg_lock_callback(void **mutex, enum AVLockOp op)
 	if(!mutex)
 		return 0;
 
-	auto my_mutex = reinterpret_cast<tbb::recursive_mutex*>(*mutex);
+	auto my_mutex = reinterpret_cast<std::recursive_mutex*>(*mutex);
 
 	switch(op)
 	{
 		case AV_LOCK_CREATE:
 		{
-			*mutex = new tbb::recursive_mutex();
+			*mutex = new std::recursive_mutex();
 			break;
 		}
 		case AV_LOCK_OBTAIN:

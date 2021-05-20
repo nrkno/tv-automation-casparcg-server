@@ -28,9 +28,7 @@
 #include <common/log.h>
 #include <common/env.h>
 
-#include <tbb/atomic.h>
 #include <tbb/parallel_for.h>
-#include <tbb/tbb_thread.h>
 
 #if defined(_MSC_VER)
 #pragma warning (push)

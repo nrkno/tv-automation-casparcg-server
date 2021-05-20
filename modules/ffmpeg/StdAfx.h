@@ -62,14 +62,11 @@
 #include <queue>
 #include <sstream>
 #include <string>
-#include <tbb/atomic.h>
 #include <tbb/cache_aligned_allocator.h>
 #include <tbb/concurrent_queue.h>
 #include <tbb/concurrent_unordered_map.h>
 #include <tbb/parallel_for.h>
 #include <tbb/parallel_invoke.h>
-#include <tbb/recursive_mutex.h>
-#include <tbb/tbb_thread.h>
 #include <unordered_map>
 #include <vector>
 #include <common/timer.h>

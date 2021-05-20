@@ -368,7 +368,7 @@ struct flash_producer : public core::frame_producer_base
 	core::constraints								constraints_		{ static_cast<double>(width_), static_cast<double>(height_) };
 	const int										buffer_size_		= env::properties().get(L"configuration.flash.buffer-depth", format_desc_.fps > 30.0 ? 4 : 2);
 
-	tbb::atomic<int>								fps_;
+	std::atomic<int>								fps_;
 
 	spl::shared_ptr<diagnostics::graph>				graph_;
 
@@ -378,7 +378,7 @@ struct flash_producer : public core::frame_producer_base
 	core::draw_frame								last_frame_			= core::draw_frame::empty();
 				
 	std::unique_ptr<flash_renderer>					renderer_;
-	tbb::atomic<bool>								has_renderer_;
+	std::atomic<bool>								has_renderer_;
 
 	executor										executor_			= L"flash_producer";
 public:
@@ -592,7 +592,7 @@ public:
 					frame_buffer_.push(frame);
 			}
 
-			fps_.fetch_and_store(static_cast<int>(renderer_->fps()*100.0));
+			fps_ = static_cast<int>(renderer_->fps() * 100.0);
 			graph_->set_text(print());
 
 			if (renderer_->is_empty())

@@ -47,7 +47,6 @@
 
 #include <tbb/concurrent_queue.h>
 #include <tbb/spin_mutex.h>
-#include <tbb/atomic.h>
 
 #include <unordered_map>
 #include <vector>
@@ -58,7 +57,7 @@ struct mixer::impl : boost::noncopyable
 {
 	int									channel_index_;
 	spl::shared_ptr<diagnostics::graph>	graph_;
-	tbb::atomic<int64_t>				current_mix_time_;
+	std::atomic<int64_t>				current_mix_time_;
 	spl::shared_ptr<monitor::subject>	monitor_subject_	= spl::make_shared<monitor::subject>("/mixer");
 	audio_mixer							audio_mixer_		{ graph_ };
 	spl::shared_ptr<image_mixer>		image_mixer_;

@@ -28,7 +28,6 @@
 #include "blocking_priority_queue.h"
 #include "future.h"
 
-#include <tbb/atomic.h>
 #include <tbb/concurrent_priority_queue.h>
 
 #include <boost/thread.hpp>
@@ -56,10 +55,10 @@ class executor final
 	typedef blocking_priority_queue<std::function<void()>, task_priority>	function_queue_t;
 
 	const std::wstring	name_;
-	tbb::atomic<bool>	is_running_;
+	std::atomic<bool>	is_running_;
 	boost::thread		thread_;
 	function_queue_t	execution_queue_;
-	tbb::atomic<bool>	currently_in_task_;
+	std::atomic<bool>	currently_in_task_;
 
 public:
 	executor(const std::wstring& name)

@@ -25,7 +25,6 @@
 
 #include "stdafx.h"
 
-#include <tbb/task_scheduler_init.h>
 #include <tbb/task_scheduler_observer.h>
 
 #if defined _DEBUG && defined _MSC_VER
@@ -63,8 +62,6 @@
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/thread.hpp>
 #include <boost/thread/future.hpp>
-
-#include <tbb/atomic.h>
 
 #include <future>
 #include <set>
@@ -110,7 +107,7 @@ void print_system_info(const spl::shared_ptr<core::system_info_provider_reposito
 
 void do_run(std::weak_ptr<caspar::IO::protocol_strategy<wchar_t>> amcp,
             std::promise<bool>&                                   shutdown_server_now,
-            tbb::atomic<bool>&                                    should_wait_for_keypress)
+            std::atomic<bool>&                                    should_wait_for_keypress)
 {
     ensure_gpf_handler_installed_for_thread("Console thread");
     std::wstring wcmd;
@@ -138,7 +135,7 @@ void do_run(std::weak_ptr<caspar::IO::protocol_strategy<wchar_t>> amcp,
     }
 };
 
-bool run(const std::wstring& config_file_name, tbb::atomic<bool>& should_wait_for_keypress)
+bool run(const std::wstring& config_file_name, std::atomic<bool>& should_wait_for_keypress)
 {
     std::promise<bool> shutdown_server_now;
     std::future<bool>  shutdown_server = shutdown_server_now.get_future();
@@ -232,7 +229,6 @@ int main(int argc, char** argv)
         }
     } tbb_thread_installer;
 
-    tbb::task_scheduler_init init;
     std::wstring             config_file_name(L"casparcg.config");
 
     try {
@@ -268,7 +264,7 @@ int main(int argc, char** argv)
         // Setup console window.
         setup_console_window();
 
-        tbb::atomic<bool> should_wait_for_keypress;
+        std::atomic<bool> should_wait_for_keypress;
         should_wait_for_keypress = false;
         auto should_restart      = run(config_file_name, should_wait_for_keypress);
         return_code              = should_restart ? 5 : 0;

@@ -33,7 +33,6 @@
 #include <boost/filesystem/fstream.hpp>
 #include <boost/filesystem/convenience.hpp>
 
-#include <tbb/atomic.h>
 #include <tbb/concurrent_queue.h>
 
 #include "executor.h"
@@ -88,7 +87,7 @@ public:
 	{
 	}
 
-	void reemmit_all(const tbb::atomic<bool>& running)
+	void reemmit_all(const std::atomic<bool>& running)
 	{
 		if (static_cast<int>(events_mask_ & filesystem_event::MODIFIED) == 0)
 			return;
@@ -207,14 +206,14 @@ class polling_filesystem_monitor
 		: public filesystem_monitor
 		, public spl::enable_shared_from_this<polling_filesystem_monitor>
 {
-	tbb::atomic<bool>								running_;
+	std::atomic<bool>								running_;
 	std::shared_ptr<boost::asio::io_service>		scheduler_;
 	directory_monitor								root_monitor_;
 	boost::asio::deadline_timer						timer_;
 	int												scan_interval_millis_;
 	std::promise<void>								initial_scan_completion_;
 	tbb::concurrent_queue<boost::filesystem::path>	to_reemmit_;
-	tbb::atomic<bool>								reemmit_all_;
+	std::atomic<bool>								reemmit_all_;
 	executor										executor_;
 public:
 	polling_filesystem_monitor(
@@ -303,7 +302,7 @@ private:
 
 		try
 		{
-			if (reemmit_all_.fetch_and_store(false))
+			if (reemmit_all_.exchange(false))
 				root_monitor_.reemmit_all(running_);
 			else
 			{

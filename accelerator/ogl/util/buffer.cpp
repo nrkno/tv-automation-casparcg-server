@@ -34,20 +34,18 @@
 
 #include <boost/property_tree/ptree.hpp>
 
-#include <tbb/atomic.h>
-
 namespace caspar { namespace accelerator { namespace ogl {
 
-static tbb::atomic<int>			g_w_total_count;
-static tbb::atomic<std::size_t>	g_w_total_size;
-static tbb::atomic<int>			g_r_total_count;
-static tbb::atomic<std::size_t>	g_r_total_size;
+static std::atomic<int>			g_w_total_count;
+static std::atomic<std::size_t>	g_w_total_size;
+static std::atomic<int>			g_r_total_count;
+static std::atomic<std::size_t>	g_r_total_size;
 
 struct buffer::impl : boost::noncopyable
 {	
 	GLuint						pbo_;
 	const std::size_t			size_;
-	tbb::atomic<uint8_t*>		data_;
+	std::atomic<uint8_t*>		data_;
 	GLenum						usage_;
 	GLenum						target_;
 

@@ -80,8 +80,6 @@
 #include <boost/property_tree/xml_parser.hpp>
 #include <boost/thread.hpp>
 
-#include <tbb/atomic.h>
-
 #include "protocol/util/tokenize.h"
 #include <boost/format.hpp>
 #include <future>
@@ -146,7 +144,7 @@ struct server::impl : boost::noncopyable
     spl::shared_ptr<core::cg_producer_registry>            cg_registry_;
     spl::shared_ptr<core::frame_producer_registry>         producer_registry_;
     spl::shared_ptr<core::frame_consumer_registry>         consumer_registry_;
-    tbb::atomic<bool>                                      running_;
+    std::atomic<bool>                                      running_;
     std::shared_ptr<thumbnail_generator>                   thumbnail_generator_;
     std::promise<bool>&                                    shutdown_server_now_;
 

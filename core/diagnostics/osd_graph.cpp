@@ -41,7 +41,6 @@
 #include <boost/lexical_cast.hpp>
 
 #include <tbb/concurrent_unordered_map.h>
-#include <tbb/atomic.h>
 #include <tbb/spin_mutex.h>
 
 #include <GL/glew.h>
@@ -287,9 +286,9 @@ class line : public drawable
 	boost::circular_buffer<sf::Vertex>							line_data_	{ res_ };
 	boost::circular_buffer<boost::optional<sf::VertexArray>>	line_tags_	{ res_ };
 
-	tbb::atomic<float>											tick_data_;
-	tbb::atomic<bool>											tick_tag_;
-	tbb::atomic<int>											color_;
+	std::atomic<float>											tick_data_;
+	std::atomic<bool>											tick_tag_;
+	std::atomic<int>											color_;
 
 	double														x_delta_	= 1.0 / (res_ - 1);
 	//double														x_pos_		= 1.0;

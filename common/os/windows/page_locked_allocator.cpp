@@ -5,12 +5,11 @@
 #include "windows.h"
 
 #include <unordered_map>
-#include <tbb/mutex.h>
-#include <tbb/atomic.h>
+#include <mutex>
 
 namespace caspar { namespace detail {
 	
-tbb::mutex							g_mutex;
+std::mutex							g_mutex;
 std::unordered_map<void*, size_t>	g_map;
 size_t								g_free;
 
@@ -31,7 +30,7 @@ void allocate_store(size_t size)
 
 void* alloc_page_locked(size_t size)
 {
-	tbb::mutex::scoped_lock lock(g_mutex);
+    std::lock_guard<std::mutex> lock(g_mutex);
 
 	if(g_free < size)
 		allocate_store(size);
@@ -54,7 +53,7 @@ void* alloc_page_locked(size_t size)
 
 void free_page_locked(void* p)
 {		
-	tbb::mutex::scoped_lock lock(g_mutex);
+	std::lock_guard<std::mutex> lock(g_mutex);
 
 	if(g_map.find(p) == g_map.end())
 		return;

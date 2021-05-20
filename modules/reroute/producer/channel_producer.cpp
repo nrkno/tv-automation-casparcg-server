@@ -80,8 +80,8 @@ class channel_consumer : public core::frame_consumer
 	core::audio_channel_layout							channel_layout_			= core::audio_channel_layout::invalid();
 	int													channel_index_;
 	int													consumer_index_;
-	tbb::atomic<bool>									is_running_;
-	tbb::atomic<int64_t>								current_age_;
+	std::atomic<bool>									is_running_;
+	std::atomic<int64_t>								current_age_;
 	semaphore											frames_available_ { 0 };
 	int													frames_delay_;
 
@@ -97,7 +97,7 @@ public:
 
 	static int next_consumer_index()
 	{
-		static tbb::atomic<int> consumer_index_counter;
+		static std::atomic<int> consumer_index_counter;
 		static boost::once_flag consumer_index_counter_initialized;
 
 		boost::call_once(consumer_index_counter_initialized, [&]()

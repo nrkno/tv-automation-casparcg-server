@@ -32,8 +32,6 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/filesystem.hpp>
 
-#include <tbb/atomic.h>
-
 #include <common/diagnostics/graph.h>
 #include <common/filesystem.h>
 
@@ -54,7 +52,7 @@ namespace caspar { namespace core {
 
 struct thumbnail_output
 {
-	tbb::atomic<int> sleep_millis;
+	std::atomic<int> sleep_millis;
 	std::function<void (const_frame)> on_send;
 
 	thumbnail_output(int sleep_millis)

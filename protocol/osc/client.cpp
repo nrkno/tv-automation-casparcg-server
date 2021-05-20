@@ -142,7 +142,7 @@ struct client::impl : public spl::enable_shared_from_this<client::impl>, core::m
 	boost::mutex									updates_mutex_;								
 	boost::condition_variable						updates_cond_;
 
-	tbb::atomic<bool>								is_running_;
+	std::atomic<bool>								is_running_;
 
 	boost::thread									thread_;
 	

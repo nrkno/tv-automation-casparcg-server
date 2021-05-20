@@ -217,7 +217,7 @@ class layer_producer : public core::frame_producer_base
 	const std::weak_ptr<core::video_channel>	channel_;
 	core::constraints							pixel_constraints_;
 
-	tbb::atomic<bool>							double_framerate_;
+	std::atomic<bool>							double_framerate_;
 	std::queue<core::draw_frame>				frame_buffer_;
 
 public:

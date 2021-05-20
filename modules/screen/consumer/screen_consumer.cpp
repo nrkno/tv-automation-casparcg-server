@@ -54,7 +54,6 @@
 #include <boost/thread.hpp>
 #include <boost/algorithm/string.hpp>
 
-#include <tbb/atomic.h>
 #include <tbb/concurrent_queue.h>
 #include <tbb/parallel_for.h>
 
@@ -128,7 +127,7 @@ struct screen_consumer : boost::noncopyable
 	int													square_height_	= format_desc_.square_height;
 
 	sf::Window											window_;
-	tbb::atomic<bool>									polling_event_;
+	std::atomic<bool>									polling_event_;
 	std::int64_t										pts_;
 
 	spl::shared_ptr<diagnostics::graph>					graph_;
@@ -141,8 +140,8 @@ struct screen_consumer : boost::noncopyable
 	core::interaction_sink*								sink_;
 
 	boost::thread										thread_;
-	tbb::atomic<bool>									is_running_;
-	tbb::atomic<int64_t>								current_presentation_age_;
+	std::atomic<bool>									is_running_;
+	std::atomic<int64_t>								current_presentation_age_;
 
 	ffmpeg::filter										filter_;
 public:

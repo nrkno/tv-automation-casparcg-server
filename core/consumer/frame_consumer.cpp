@@ -70,9 +70,9 @@ void frame_consumer_registry::register_preconfigured_consumer_factory(const std:
     impl_->preconfigured_consumer_factories.insert(std::make_pair(element_name, factory));
 }
 
-tbb::atomic<bool>& destroy_consumers_in_separate_thread()
+std::atomic<bool>& destroy_consumers_in_separate_thread()
 {
-    static tbb::atomic<bool> state;
+    static std::atomic<bool> state;
 
     return state;
 }

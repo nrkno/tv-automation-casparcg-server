@@ -1,3 +1,14 @@
+CasparCG 2.4.3 NRK
+==========================================
+
+### Producers
+##### Improvements
+* HTML: Update CEF to 142
+
+### Consumers
+##### Improvements
+* Decklink: allow selecting device device by persistent id
+
 CasparCG 2.4.2 NRK
 ==========================================
 

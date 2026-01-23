@@ -4,7 +4,7 @@ cmake_minimum_required (VERSION 3.16)
 PROJECT ("CasparCG Server")
 SET (CONFIG_VERSION_MAJOR 2)
 SET (CONFIG_VERSION_MINOR 4)
-SET (CONFIG_VERSION_BUG 0)
+SET (CONFIG_VERSION_BUG 3)
 SET (CONFIG_VERSION_TAG "NRK-Dev")
 
 set(CASPARCG_DOWNLOAD_MIRROR https://github.com/CasparCG/dependencies/releases/download/ CACHE STRING "Source/mirror to use for external dependencies")
